@@ -18,7 +18,6 @@ export default function Login() {
     setMessage("Logging in...");
 
     try {
-      // Backend api te data pathano hocche (backend e eita handle kora thakle email ba phone dutoi kaj korbe)
       const response = await fetch("https://cadres-bcs-backend.onrender.com/api/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -52,8 +51,17 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-500 flex items-center justify-center p-4 font-sans">
-      <div className="bg-white rounded-[2rem] w-full max-w-md p-6 sm:p-10 relative shadow-2xl my-8">
+    <div className="min-h-screen flex items-center justify-center p-4 font-sans relative overflow-hidden">
+      
+      {/* Background Image with Blur & Dark Overlay */}
+      <div 
+        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat blur-[6px] scale-105"
+        style={{ backgroundImage: "url('/bcs-bg.jpg')" }}
+      ></div>
+      <div className="absolute inset-0 z-0 bg-slate-900/50"></div>
+
+      {/* Login Card */}
+      <div className="bg-white rounded-[2rem] w-full max-w-md p-6 sm:p-10 relative z-10 shadow-2xl my-8">
         
         {/* Back Button */}
         <Link href="/" className="absolute top-6 left-6 w-10 h-10 bg-gray-50 hover:bg-gray-100 rounded-full flex items-center justify-center transition-colors">
@@ -166,7 +174,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 transition-colors disabled:bg-blue-400 flex justify-center items-center"
+            className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 transition-colors disabled:bg-blue-400 flex justify-center items-center shadow-md"
           >
             {isLoading ? "Signing in..." : "Sign In"}
           </button>
