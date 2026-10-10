@@ -50,6 +50,11 @@ export default function Login() {
     }
   };
 
+  // সোশ্যাল বাটনগুলোতে ক্লিক করলে এই ফাংশনটি কল হবে
+  const handleSocialLogin = (provider: string) => {
+    alert(`অপেক্ষা করুন! ${provider} দিয়ে লগইন করার ফিচারটি খুব শীঘ্রই যুক্ত হচ্ছে। আপাতত ইমেইল/ফোন নাম্বার দিয়ে লগইন করুন।`);
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 font-sans relative overflow-hidden bg-slate-50">
       
@@ -84,7 +89,11 @@ export default function Login() {
 
         {/* Social Authentication Buttons */}
         <div className="space-y-3 mb-6">
-          <button type="button" className="w-full flex items-center justify-between px-4 py-3.5 border border-gray-300 rounded-2xl hover:bg-gray-50 transition-colors relative">
+          <button 
+            type="button" 
+            onClick={() => handleSocialLogin("Google")}
+            className="w-full flex items-center justify-between px-4 py-3.5 border border-gray-300 rounded-2xl hover:bg-gray-50 transition-colors relative active:scale-95 duration-200"
+          >
             <div className="flex items-center gap-3">
               <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg" className="absolute left-4">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -97,21 +106,33 @@ export default function Login() {
             <span className="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-1 rounded-md">Recommended</span>
           </button>
           
-          <button type="button" className="w-full flex items-center gap-3 px-4 py-3.5 bg-black text-white rounded-2xl hover:bg-gray-900 transition-colors relative">
+          <button 
+            type="button" 
+            onClick={() => handleSocialLogin("Apple")}
+            className="w-full flex items-center gap-3 px-4 py-3.5 bg-black text-white rounded-2xl hover:bg-gray-900 transition-colors relative active:scale-95 duration-200"
+          >
             <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" className="absolute left-4">
               <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C9.6 19.33 8.43 17 8.43 14.5c0-3.04 1.9-4.66 4.09-4.75 1.1-.05 2.12.7 2.8.7.67 0 1.9-.84 3.22-.72 1.37.1 2.53.72 3.24 1.77-2.82 1.62-2.36 5.64.44 6.84-.6 1.48-1.39 2.85-2.17 3.94zM14.62 6.02c-.52.65-1.29 1.07-2.08 1.05-.12-1.63.7-3.18 1.96-4.04.53-.62 1.3-1.05 2.1-1.03.14 1.7-.75 3.25-1.98 4.02z" />
             </svg>
             <span className="font-semibold text-sm sm:text-base ml-8">Continue with Apple</span>
           </button>
 
-          <button type="button" className="w-full flex items-center gap-3 px-4 py-3.5 border border-gray-300 rounded-2xl hover:bg-gray-50 transition-colors relative">
+          <button 
+            type="button" 
+            onClick={() => handleSocialLogin("Facebook")}
+            className="w-full flex items-center gap-3 px-4 py-3.5 border border-gray-300 rounded-2xl hover:bg-gray-50 transition-colors relative active:scale-95 duration-200"
+          >
             <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg" className="absolute left-4">
               <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" fill="#1877F2"/>
             </svg>
             <span className="font-semibold text-gray-800 text-sm sm:text-base ml-8">Continue with Facebook</span>
           </button>
 
-          <button type="button" className="w-full flex items-center gap-3 px-4 py-3.5 border border-gray-300 rounded-2xl hover:bg-gray-50 transition-colors relative">
+          <button 
+            type="button" 
+            onClick={() => handleSocialLogin("Phone")}
+            className="w-full flex items-center gap-3 px-4 py-3.5 border border-gray-300 rounded-2xl hover:bg-gray-50 transition-colors relative active:scale-95 duration-200"
+          >
             <svg className="w-5 h-5 absolute left-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
             </svg>
@@ -173,7 +194,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 transition-colors disabled:bg-blue-400 flex justify-center items-center shadow-md"
+            className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 transition-colors disabled:bg-blue-400 flex justify-center items-center shadow-md active:scale-95 duration-200"
           >
             {isLoading ? "Signing in..." : "Sign In"}
           </button>
