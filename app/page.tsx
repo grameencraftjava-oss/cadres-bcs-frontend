@@ -72,7 +72,7 @@ export default function Home() {
             {/* Action Buttons */}
             <div className="flex items-center">
               <Link href="/login" className="px-5 py-2 md:px-8 md:py-3 bg-blue-600 text-white text-sm md:text-base font-bold rounded-lg md:rounded-xl hover:bg-blue-700 shadow-md transition whitespace-nowrap">
-                লগইন / ড্যাশবোর্ড
+                লগইন / সাইন আপ
               </Link>
             </div>
           </div>
