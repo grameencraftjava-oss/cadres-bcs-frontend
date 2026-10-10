@@ -1,3 +1,5 @@
+"use client";
+
 import Link from 'next/link';
 
 export default function Home() {
@@ -9,7 +11,7 @@ export default function Home() {
       cadre1: "BCS পুলিশ ক্যাডার, 47th BCS",
       cadre2: "BCS রেলওয়ে পরিবহণ, 46th BCS",
       university: "BUET",
-      image: "/taki.jpg" // পাবলিক ফোল্ডারে এই নামে ছবি রাখবেন
+      image: "/taki.jpg"
     },
     {
       id: 2,
@@ -139,7 +141,6 @@ export default function Home() {
 
                     {/* Image Area */}
                     <div className="h-48 bg-blue-50 flex items-end justify-center pt-6 px-4 relative overflow-hidden">
-                      {/* Background decoration */}
                       <div className="absolute inset-0 bg-gradient-to-t from-blue-100/50 to-transparent"></div>
 
                       {/* Photo Placeholder */}
