@@ -66,7 +66,8 @@ export default function Home() {
             <div className="hidden md:flex space-x-8">
               <Link href="#" className="text-gray-700 hover:text-blue-600 font-semibold transition">কোর্সসমূহ</Link>
               <Link href="#" className="text-gray-700 hover:text-blue-600 font-semibold transition">মডেল টেস্ট</Link>
-              <Link href="#" className="text-gray-700 hover:text-blue-600 font-semibold transition">আমাদের সম্পর্কে</Link>
+              {/* Ekhane href="#about" add kora hoyeche */}
+              <Link href="#about" className="text-gray-700 hover:text-blue-600 font-semibold transition">আমাদের সম্পর্কে</Link>
             </div>
 
             {/* Action Buttons */}
@@ -116,8 +117,8 @@ export default function Home() {
         </div>
       </main>
 
-      {/* Golden Mentors Panel Section */}
-      <section className="bg-white py-12 md:py-16 border-t border-gray-100">
+      {/* Golden Mentors Panel Section - Ekhane id="about" add kora hoyeche */}
+      <section id="about" className="bg-white py-12 md:py-16 border-t border-gray-100 scroll-mt-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
           <div className="text-center max-w-3xl mx-auto mb-10 md:mb-16">
