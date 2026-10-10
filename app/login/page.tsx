@@ -51,24 +51,19 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 font-sans relative overflow-hidden bg-gray-900">
+    <div className="min-h-screen flex items-center justify-center p-4 font-sans relative overflow-hidden bg-slate-50">
       
-      {/* Background Image using standard img tag (Foolproof method) */}
-      <img 
-        src="/bcs-bg.jpg" 
-        alt="Background" 
-        className="absolute inset-0 w-full h-full object-cover blur-[6px] scale-105 z-0 opacity-70"
-        onError={(e) => {
-          e.currentTarget.style.display = 'none'; // ছবি না পেলে ব্যাকগ্রাউন্ড গ্রে-ব্ল্যাক থাকবে
-        }}
-      />
-      <div className="absolute inset-0 bg-slate-900/50 z-0"></div>
+      {/* Modern Premium Mesh Gradient Background */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+        <div className="absolute -top-[20%] -left-[10%] w-[60%] h-[60%] rounded-full bg-gradient-to-br from-blue-300/40 to-blue-100/10 blur-[120px]"></div>
+        <div className="absolute -bottom-[20%] -right-[10%] w-[60%] h-[60%] rounded-full bg-gradient-to-tl from-indigo-300/30 to-purple-200/10 blur-[120px]"></div>
+      </div>
 
       {/* Login Card */}
-      <div className="bg-white rounded-[2rem] w-full max-w-md p-6 sm:p-10 relative z-10 shadow-2xl my-8">
+      <div className="bg-white rounded-[2rem] w-full max-w-md p-6 sm:p-10 relative z-10 shadow-[0_8px_30px_rgb(0,0,0,0.06)] my-8 border border-white">
         
         {/* Back Button */}
-        <Link href="/" className="absolute top-6 left-6 w-10 h-10 bg-gray-50 hover:bg-gray-100 rounded-full flex items-center justify-center transition-colors">
+        <Link href="/" className="absolute top-6 left-6 w-10 h-10 bg-gray-50 hover:bg-gray-100 rounded-full flex items-center justify-center transition-colors shadow-sm border border-gray-100">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-gray-600">
             <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
           </svg>
