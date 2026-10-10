@@ -106,14 +106,15 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Right Side (Hero Graphic Placeholder) */}
+            {/* Right Side (Hero Graphic with team.png) */}
             <div className="relative mt-10 lg:mt-0">
-              <div className="aspect-video md:aspect-[4/3] rounded-[2rem] bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col items-center justify-center border-8 border-white shadow-2xl overflow-hidden relative">
-                <div className="text-center z-10 p-8">
-                  <div className="text-6xl mb-4">🎓</div>
-                  <h3 className="text-2xl font-extrabold text-blue-900">Cadre&apos;s BCS Compass</h3>
-                  <p className="text-blue-700 mt-2 font-medium">এখানে কোর্সের প্রমোশনাল ছবি বা ভিডিও বসবে</p>
-                </div>
+              <div className="aspect-video md:aspect-[4/3] rounded-[2rem] bg-blue-50 border-8 border-white shadow-2xl overflow-hidden relative flex items-center justify-center">
+                {/* Team Image */}
+                <img
+                    src="/team.png"
+                    alt="Cadre's BCS Compass Team"
+                    className="w-full h-full object-cover"
+                />
               </div>
             </div>
           </div>
