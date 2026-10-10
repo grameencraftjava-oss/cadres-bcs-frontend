@@ -106,14 +106,14 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Right Side (Hero Graphic with team.png) */}
-            <div className="relative mt-10 lg:mt-0">
-              <div className="aspect-video md:aspect-[4/3] rounded-[2rem] bg-blue-50 border-8 border-white shadow-2xl overflow-hidden relative flex items-center justify-center">
-                {/* Team Image */}
+            {/* Right Side (Hero Graphic with team.png - FIXED) */}
+            <div className="relative mt-10 lg:mt-0 flex justify-center">
+              <div className="w-full rounded-2xl overflow-hidden shadow-lg border border-gray-100/50">
+                {/* Team Image (এখন আর কোনো অংশ কাটবে না) */}
                 <img
                     src="/team.png"
                     alt="Cadre's BCS Compass Team"
-                    className="w-full h-full object-cover"
+                    className="w-full h-auto object-contain"
                 />
               </div>
             </div>
