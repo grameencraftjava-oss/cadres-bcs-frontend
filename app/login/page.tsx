@@ -51,17 +51,18 @@ export default function Login() {
   };
 
   return (
-    <div 
-      className="min-h-screen flex items-center justify-center p-4 font-sans relative overflow-hidden"
-      style={{
-        backgroundImage: "url('/bcs-bg.jpg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat"
-      }}
-    >
-      {/* Dark Overlay with Blur Effect */}
-      <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-[6px] z-0"></div>
+    <div className="min-h-screen flex items-center justify-center p-4 font-sans relative overflow-hidden bg-gray-900">
+      
+      {/* Background Image using standard img tag (Foolproof method) */}
+      <img 
+        src="/bcs-bg.jpg" 
+        alt="Background" 
+        className="absolute inset-0 w-full h-full object-cover blur-[6px] scale-105 z-0 opacity-70"
+        onError={(e) => {
+          e.currentTarget.style.display = 'none'; // ছবি না পেলে ব্যাকগ্রাউন্ড গ্রে-ব্ল্যাক থাকবে
+        }}
+      />
+      <div className="absolute inset-0 bg-slate-900/50 z-0"></div>
 
       {/* Login Card */}
       <div className="bg-white rounded-[2rem] w-full max-w-md p-6 sm:p-10 relative z-10 shadow-2xl my-8">
