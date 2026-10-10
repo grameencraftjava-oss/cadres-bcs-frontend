@@ -309,7 +309,7 @@ export default function Home() {
             </div>
             <div className="p-8">
               <div className="text-center mb-8">
-                <p className="text-gray-500 text-sm font-semibold">মার্চেন্ট: Cadre's BCS Compass</p>
+                <p className="text-gray-500 text-sm font-semibold">মার্চেন্ট: Cadre&apos;s BCS Compass</p>
                 <p className="text-3xl font-extrabold text-gray-800 mt-2">৳ {selectedCourse.price}</p>
               </div>
               <form onSubmit={handlePaymentSubmit} className="space-y-5">
