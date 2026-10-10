@@ -137,8 +137,8 @@ export default function Home() {
 
             {/* Desktop Menu */}
             <div className="hidden md:flex space-x-8">
-              <Link href="#courses" className="text-gray-700 hover:text-blue-600 font-semibold transition">কোর্সসমূহ</Link>
-              <Link href="#about" className="text-gray-700 hover:text-blue-600 font-semibold transition">আমাদের সম্পর্কে</Link>
+              <a href="#courses" className="text-gray-700 hover:text-blue-600 font-semibold transition">কোর্সসমূহ</a>
+              <a href="#about" className="text-gray-700 hover:text-blue-600 font-semibold transition">আমাদের সম্পর্কে</a>
             </div>
 
             {/* Action Buttons */}
@@ -169,9 +169,9 @@ export default function Home() {
             </p>
             
             <div className="w-full sm:w-auto pt-2 md:pt-4">
-              <Link href="#courses" className="block w-full px-8 py-3.5 md:py-4 bg-blue-600 text-white text-center font-bold rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-1 transition-all">
+              <a href="#courses" className="block w-full px-8 py-3.5 md:py-4 bg-blue-600 text-white text-center font-bold rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-1 transition-all">
                 কোর্সগুলো দেখুন
-              </Link>
+              </a>
             </div>
           </div>
 
