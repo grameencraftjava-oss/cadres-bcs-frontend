@@ -8,9 +8,17 @@ export default function Home() {
         <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-20">
-              {/* Logo */}
-              <div className="flex-shrink-0 flex items-center cursor-pointer">
-                <h1 className="text-3xl font-extrabold text-blue-700 tracking-tight">Cadre&apos;s<span className="text-orange-500">BCS</span></h1>
+
+              {/* Logo Section (Here is the update!) */}
+              <div className="flex-shrink-0 flex items-center gap-3 cursor-pointer">
+                {/* Image Box */}
+                <div className="w-12 h-12 md:w-14 md:h-14 bg-white rounded-2xl overflow-hidden flex items-center justify-center border-2 border-gray-100 shadow-sm">
+                  <img src="/logo.png" alt="CBC Logo" className="w-full h-full object-contain p-1" />
+                </div>
+                {/* Text */}
+                <h1 className="text-xl md:text-2xl font-extrabold text-gray-800 tracking-tight">
+                  Cadre&apos;s BCS Compass-<span className="text-blue-700">CBC</span>
+                </h1>
               </div>
 
               {/* Desktop Menu */}
