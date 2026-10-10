@@ -70,12 +70,9 @@ export default function Home() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-2 md:space-x-4">
-              <Link href="/login" className="hidden md:inline-flex px-6 py-2.5 text-blue-700 font-bold hover:bg-blue-50 rounded-xl transition">
-                লগইন
-              </Link>
-              <Link href="/dashboard" className="px-3 py-1.5 md:px-6 md:py-2.5 bg-blue-600 text-white text-[11px] md:text-base font-bold rounded-lg md:rounded-xl hover:bg-blue-700 shadow-md transition whitespace-nowrap">
-                ফ্রি শুরু করুন
+            <div className="flex items-center">
+              <Link href="/login" className="px-5 py-2 md:px-8 md:py-3 bg-blue-600 text-white text-sm md:text-base font-bold rounded-lg md:rounded-xl hover:bg-blue-700 shadow-md transition whitespace-nowrap">
+                লগইন / ড্যাশবোর্ড
               </Link>
             </div>
           </div>
