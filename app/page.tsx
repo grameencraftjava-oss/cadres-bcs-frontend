@@ -138,7 +138,6 @@ export default function Home() {
             {/* Desktop Menu */}
             <div className="hidden md:flex space-x-8">
               <Link href="#courses" className="text-gray-700 hover:text-blue-600 font-semibold transition">কোর্সসমূহ</Link>
-              <Link href="#" className="text-gray-700 hover:text-blue-600 font-semibold transition">মডেল টেস্ট</Link>
               <Link href="#about" className="text-gray-700 hover:text-blue-600 font-semibold transition">আমাদের সম্পর্কে</Link>
             </div>
 
