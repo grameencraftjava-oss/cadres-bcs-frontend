@@ -196,7 +196,7 @@ export default function Home() {
             {/* Social Links with Logos */}
             <div>
               <h3 className="text-lg font-bold mb-5 border-b border-slate-700 pb-2 inline-block text-white">আমাদের সাথে যুক্ত থাকুন</h3>
-              <p className="text-sm text-slate-400 mb-5">যেকোনো প্রয়োজনে আমাদের অফিসিয়াল চ্যানেলগুলোতে যোগাযোগ করুন:</p>
+              <p className="text-sm text-slate-400 mb-5 leading-relaxed">বিসিএস সম্পর্কিত সকল আপডেট, ফ্রি গাইডলাইন এবং আমাদের স্পেশাল কমিউনিটিতে যুক্ত হতে নিচের অফিসিয়াল চ্যানেলগুলোতে জয়েন করুন:</p>
               <div className="flex flex-wrap gap-4">
                 {/* Facebook */}
                 <a href="https://www.facebook.com/share/1ERfS7rgK8/" target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 hover:bg-blue-600 hover:text-white transition-all shadow-lg hover:-translate-y-1 hover:shadow-blue-500/30" title="Facebook">
