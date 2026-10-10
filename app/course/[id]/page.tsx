@@ -25,7 +25,7 @@ export default function CourseLessonsPage({ params }: { params: Promise<{ id: st
     }
 
     if (courseId) {
-      fetch(`http://localhost:8080/api/lessons/course/${courseId}`, {
+      fetch(`https://cadres-bcs-backend.onrender.com/api/lessons/course/${courseId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

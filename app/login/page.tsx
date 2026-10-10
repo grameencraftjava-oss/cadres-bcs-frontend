@@ -12,7 +12,7 @@ export default function LoginPage() {
     e.preventDefault();
     setMessage("লগইন করা হচ্ছে...");
     try {
-      const response = await fetch("http://localhost:8080/api/users/login", {
+      const response = await fetch("https://cadres-bcs-backend.onrender.com/api/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

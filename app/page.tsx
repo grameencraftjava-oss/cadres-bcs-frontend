@@ -19,7 +19,7 @@ export default function HomePage() {
 
   // ব্যাকএন্ড থেকে সব কোর্স ফেচ করা (পাবলিক API)
   useEffect(() => {
-    fetch("http://localhost:8080/api/courses/all")
+    fetch("https://cadres-bcs-backend.onrender.com/api/courses/all")
       .then((res) => res.json())
       .then((data) => {
         setCourses(data);
@@ -47,7 +47,7 @@ export default function HomePage() {
     const token = localStorage.getItem("token");
 
     try {
-      const response = await fetch("http://localhost:8080/api/enrollments/add", {
+      const response = await fetch("https://cadres-bcs-backend.onrender.com/api/enrollments/add", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

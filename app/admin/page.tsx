@@ -31,7 +31,7 @@ export default function AdminPanel() {
     setCMsg("প্রসেসিং হচ্ছে...");
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch("http://localhost:8080/api/courses/add", {
+      const res = await fetch("https://cadres-bcs-backend.onrender.com/api/courses/add", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -62,7 +62,7 @@ export default function AdminPanel() {
     setLMsg("প্রসেসিং হচ্ছে...");
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch("http://localhost:8080/api/lessons/add", {
+      const res = await fetch("https://cadres-bcs-backend.onrender.com/api/lessons/add", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

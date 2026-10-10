@@ -24,7 +24,7 @@ export default function DashboardPage() {
     }
     setToken(storedToken);
 
-    fetch("http://localhost:8080/api/enrollments/dashboard/1", {
+    fetch("https://cadres-bcs-backend.onrender.com/api/enrollments/dashboard/1", {
       headers: {
         Authorization: `Bearer ${storedToken}`,
       },
