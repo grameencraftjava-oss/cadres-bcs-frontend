@@ -10,7 +10,7 @@ export default function Home() {
       cadre1: "BCS পুলিশ ক্যাডার, 47th BCS",
       cadre2: "BCS রেলওয়ে পরিবহণ, 46th BCS",
       university: "BUET",
-      image: "/taki.jpg"
+      image: "/Taki.png"
     },
     {
       id: 2,
@@ -18,7 +18,7 @@ export default function Home() {
       cadre1: "BCS লাইভস্টক ক্যাডার",
       cadre2: "47th BCS",
       university: "রাজশাহী বিশ্ববিদ্যালয়",
-      image: "/mehedi.jpg"
+      image: "/Mehedi.png"
     },
     {
       id: 3,
@@ -26,7 +26,7 @@ export default function Home() {
       cadre1: "BCS প্রশাসন ক্যাডার",
       cadre2: "মেরিট: ১৭তম, 47th BCS",
       university: "বাংলাদেশ কৃষি বিশ্ববিদ্যালয়",
-      image: "/nisha.jpg"
+      image: "/Nisha.png"
     },
     {
       id: 4,
@@ -34,7 +34,7 @@ export default function Home() {
       cadre1: "BCS প্রশাসন ক্যাডার",
       cadre2: "47th BCS",
       university: "রাজশাহী বিশ্ববিদ্যালয়",
-      image: "/mamun.jpg"
+      image: "/Mamun.png"
     },
     {
       id: 5,
@@ -42,7 +42,7 @@ export default function Home() {
       cadre1: "BCS প্রশাসন ক্যাডার",
       cadre2: "47th BCS",
       university: "বাংলাদেশ কৃষি বিশ্ববিদ্যালয়",
-      image: "/naim.jpg"
+      image: "/Naim.png"
     }
   ];
 
