@@ -183,13 +183,28 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Quick Links */}
+            {/* Direct Contact Numbers */}
             <div>
-              <h3 className="text-lg font-bold mb-5 border-b border-slate-700 pb-2 inline-block text-white">প্রয়োজনীয় লিংক</h3>
-              <ul className="space-y-3 text-sm text-slate-400 font-medium">
-                <li><Link href="/courses" className="hover:text-blue-400 transition flex items-center gap-2"><span className="text-blue-500">›</span> আমাদের কোর্সসমূহ</Link></li>
-                <li><a href="#about" className="hover:text-blue-400 transition flex items-center gap-2"><span className="text-blue-500">›</span> আমাদের সম্পর্কে</a></li>
-                <li><Link href="/login" className="hover:text-blue-400 transition flex items-center gap-2"><span className="text-blue-500">›</span> লগইন / সাইন আপ</Link></li>
+              <h3 className="text-lg font-bold mb-5 border-b border-slate-700 pb-2 inline-block text-white">জরুরি যোগাযোগ</h3>
+              <ul className="space-y-4 text-sm text-slate-400 font-medium">
+                <li className="flex items-center gap-3">
+                  <span className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-blue-400">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                  </span>
+                  <div>
+                    <p className="text-white font-semibold">Md. Abdullah Al Mamun</p>
+                    <a href="tel:+8801612029324" className="hover:text-blue-400 transition">+880 1612-029324</a>
+                  </div>
+                </li>
+                <li className="flex items-center gap-3">
+                  <span className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-blue-400">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                  </span>
+                  <div>
+                    <p className="text-white font-semibold">Taki Yasir Tomal</p>
+                    <a href="tel:+8801720335771" className="hover:text-blue-400 transition">+880 1720-335771</a>
+                  </div>
+                </li>
               </ul>
             </div>
 
