@@ -75,16 +75,16 @@ export default function Login() {
         const result = await signInWithPopup(auth, googleProvider);
         const user = result.user;
         
-        // Save user info and redirect
         localStorage.setItem("token", "google-oauth-token");
         localStorage.setItem("userEmail", user.email || "");
         localStorage.setItem("userName", user.displayName || "");
         
         setMessage(`✅ Google Login Successful! Welcome ${user.displayName}`);
         setTimeout(() => { router.push("/dashboard"); }, 1000);
-      } catch (error: any) {
+      } catch (error) {
         console.error(error);
-        if (error.code === 'auth/invalid-api-key') {
+        // Removed the strict 'any' typing that caused Vercel build to fail
+        if (error instanceof Error && error.message.includes('api-key')) {
            setMessage("❌ Firebase API Key বসানো হয়নি! .env.local ফাইল চেক করুন।");
         } else {
            setMessage("❌ Google Login Failed. Try again.");
