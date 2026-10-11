@@ -2,20 +2,51 @@
 
 import { useState, useEffect } from 'react';
 
+// Define strict types to prevent Vercel ESLint/TypeScript errors
+interface DashboardStats {
+  totalSignups: number;
+  totalStudents: number;
+  activeEnrollments: number;
+  totalReviews: number;
+  bannedAccounts: number;
+}
+
+interface StudentData {
+  id?: string | number;
+  name: string;
+  phone: string;
+  email: string;
+  paidAmount?: number;
+}
+
+interface AdminHistoryData {
+  name: string;
+  email: string;
+  role: string;
+  loginTime: string;
+  ipDetails: string;
+}
+
+interface ReviewData {
+  id: string;
+  studentName: string;
+  comment: string;
+}
+
 export default function SuperAdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
 
-  // State variables
-  const [stats, setStats] = useState({ totalSignups: 0, totalStudents: 0, activeEnrollments: 0, totalReviews: 0, bannedAccounts: 0 });
-  const [students, setStudents] = useState<any[]>([]);
-  const [adminHistory, setAdminHistory] = useState<any[]>([]);
-  const [reviews, setReviews] = useState<any[]>([]);
+  // State variables with strict types
+  const [stats, setStats] = useState<DashboardStats>({ totalSignups: 0, totalStudents: 0, activeEnrollments: 0, totalReviews: 0, bannedAccounts: 0 });
+  const [students, setStudents] = useState<StudentData[]>([]);
+  const [adminHistory, setAdminHistory] = useState<AdminHistoryData[]>([]);
+  const [reviews, setReviews] = useState<ReviewData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
 
   // States for Manual Enroll Student Search
   const [enrollStudentId, setEnrollStudentId] = useState("");
-  const [enrollStudentDetails, setEnrollStudentDetails] = useState({ name: "", email: "", phone: "" });
+  const [enrollStudentDetails, setEnrollStudentDetails] = useState<StudentData>({ name: "", email: "", phone: "" });
 
   const BACKEND_URL = "https://cadres-bcs-backend.onrender.com";
 
@@ -92,6 +123,7 @@ export default function SuperAdminDashboard() {
         alert("❌ Failed to enroll student. " + await response.text());
       }
     } catch (error) {
+      console.error(error);
       alert("❌ Server Error: Cannot connect to backend API.");
     }
   };
@@ -116,6 +148,7 @@ export default function SuperAdminDashboard() {
         alert("❌ Failed to create voucher. " + await response.text());
       }
     } catch (error) {
+      console.error(error);
       alert("❌ Server Error: Cannot connect to backend API.");
     }
   };
@@ -134,13 +167,14 @@ export default function SuperAdminDashboard() {
       });
 
       if (response.ok) {
-        alert(`✅ ${data.role} assigned successfully!`);
+        alert(`✅ Role assigned successfully!`);
         form.reset();
         fetchDashboardData();
       } else {
         alert("❌ Failed to assign role. " + await response.text());
       }
     } catch (error) {
+      console.error(error);
       alert("❌ Server Error: Cannot connect to backend API.");
     }
   };
@@ -161,6 +195,7 @@ export default function SuperAdminDashboard() {
         alert("❌ Failed to delete review.");
       }
     } catch (error) {
+      console.error(error);
       alert("❌ Server Error: Cannot connect to backend API.");
     }
   };
@@ -252,7 +287,7 @@ export default function SuperAdminDashboard() {
                           <div>{student.phone}</div>
                           <div className="text-xs text-slate-400">{student.email}</div>
                         </td>
-                        <td className="p-4 text-slate-600 text-sm font-semibold">৳ {student.paidAmount}</td>
+                        <td className="p-4 text-slate-600 text-sm font-semibold">৳ {student.paidAmount || 0}</td>
                         <td className="p-4"><span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded">PAID</span></td>
                       </tr>
                     )) : (
