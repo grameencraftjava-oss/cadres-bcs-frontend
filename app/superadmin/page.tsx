@@ -9,7 +9,7 @@ export default function SuperAdminDashboard() {
   const router = useRouter();
 
   // State variables for real data from backend
-  const [stats, setStats] = useState({ totalStudents: 0, activeEnrollments: 0, totalReviews: 0, bannedAccounts: 0, totalSignups: 0 });
+  const [stats, setStats] = useState({ totalSignups: 0, totalStudents: 0, activeEnrollments: 0, totalReviews: 0, bannedAccounts: 0 });
   const [students, setStudents] = useState<any[]>([]);
   const [admins, setAdmins] = useState<any[]>([]);
   const [adminHistory, setAdminHistory] = useState<any[]>([]);
@@ -44,7 +44,7 @@ export default function SuperAdminDashboard() {
 
     } catch (error) {
       console.error("Error fetching data:", error);
-      setErrorMsg("Failed to connect to the backend server. Make sure APIs are running.");
+      setErrorMsg("Failed to connect to backend server. Make sure APIs are running.");
     } finally {
       setIsLoading(false);
     }
@@ -52,7 +52,6 @@ export default function SuperAdminDashboard() {
 
   useEffect(() => { fetchDashboardData(); }, []);
 
-  // Function to search student by ID
   const handleStudentSearch = async () => {
       if(!enrollStudentId) return;
       try {
@@ -70,8 +69,7 @@ export default function SuperAdminDashboard() {
       } catch(e) {
           console.error("Search failed", e);
       }
-  }
-
+  };
 
   const handleManualEnroll = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -79,8 +77,8 @@ export default function SuperAdminDashboard() {
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
     
-    data.approvedBy = localStorage.getItem("userEmail") || "Super Admin";
-    data.studentName = enrollStudentDetails.name; // Include auto-fetched name
+    data.approvedBy = typeof window !== 'undefined' ? localStorage.getItem("userEmail") || "Super Admin" : "Super Admin";
+    data.studentName = enrollStudentDetails.name;
 
     try {
       const response = await fetch(`${BACKEND_URL}/api/admin/enroll`, {
@@ -102,7 +100,29 @@ export default function SuperAdminDashboard() {
     }
   };
 
-  const handleCreateVoucher = async (e: React.FormEvent<HTMLFormElement>) => { /* ... existing code ... */ e.preventDefault(); };
+  const handleCreateVoucher = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/admin/vouchers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${localStorage.getItem("token")}` },
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        alert("✅ Voucher Created Successfully!");
+        form.reset();
+      } else {
+        alert("❌ Failed to create voucher. " + await response.text());
+      }
+    } catch (error) {
+      alert("❌ Server Error: Cannot connect to backend API.");
+    }
+  };
 
   const handleAddAdmin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -129,11 +149,28 @@ export default function SuperAdminDashboard() {
     }
   };
 
-  const handleDeleteReview = async (reviewId: string) => { /* ... existing code ... */ };
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!confirm("Are you sure you want to delete this review? This action cannot be undone.")) return;
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/admin/reviews/${reviewId}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` },
+      });
+
+      if (response.ok) {
+        alert("✅ Review deleted successfully!");
+        fetchDashboardData();
+      } else {
+        alert("❌ Failed to delete review.");
+      }
+    } catch (error) {
+      alert("❌ Server Error: Cannot connect to backend API.");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
-      {/* Sidebar - (Keeping existing structure) */}
       <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col hidden md:flex shrink-0 h-screen sticky top-0">
           <div className="p-6 flex items-center gap-3 border-b border-slate-800">
             <h2 className="text-white font-bold text-lg leading-tight">CBC Admin</h2>
@@ -156,12 +193,20 @@ export default function SuperAdminDashboard() {
 
       <main className="flex-1 flex flex-col h-screen overflow-y-auto">
         <header className="bg-white border-b border-slate-200 px-8 py-5 flex justify-between items-center sticky top-0 z-10">
-          <h1 className="text-2xl font-extrabold text-slate-800 capitalize">{activeTab.replace('-', ' ')}</h1>
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-extrabold text-slate-800 capitalize">{activeTab.replace('-', ' ')}</h1>
+            {isLoading && <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded font-bold animate-pulse">Syncing...</span>}
+          </div>
         </header>
 
         <div className="p-8">
           
-          {/* OVERVIEW TAB */}
+          {errorMsg && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 font-semibold text-sm">
+              {errorMsg}
+            </div>
+          )}
+
           {activeTab === "overview" && (
             <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
               {[
@@ -179,10 +224,50 @@ export default function SuperAdminDashboard() {
             </div>
           )}
 
-          {/* COURSES TAB (Unchanged) */}
-          {activeTab === "courses" && ( <div>Courses Content...</div> )}
+          {activeTab === "courses" && (
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+              <div className="flex justify-between items-end mb-6">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Filter by Course</label>
+                  <select className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-semibold text-slate-700">
+                    <option value="all">All Courses</option>
+                  </select>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-slate-500 font-semibold">Total Students in this course</p>
+                  <p className="text-2xl font-black text-blue-600">{students.length || 0}</p>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 text-slate-500 text-sm border-y border-slate-200">
+                      <th className="p-4 font-bold">Student Name</th>
+                      <th className="p-4 font-bold">Phone & Email</th>
+                      <th className="p-4 font-bold">Paid Amount</th>
+                      <th className="p-4 font-bold">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {students.length > 0 ? students.map((student, idx) => (
+                      <tr key={idx} className="border-b border-slate-100">
+                        <td className="p-4 font-bold text-slate-800">{student.name}</td>
+                        <td className="p-4 text-slate-600 text-sm">
+                          <div>{student.phone}</div>
+                          <div className="text-xs text-slate-400">{student.email}</div>
+                        </td>
+                        <td className="p-4 text-slate-600 text-sm font-semibold">৳ {student.paidAmount}</td>
+                        <td className="p-4"><span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded">PAID</span></td>
+                      </tr>
+                    )) : (
+                      <tr><td colSpan={4} className="p-8 text-center text-slate-500">Waiting for API data.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
-          {/* MANUAL ENROLL TAB */}
           {activeTab === "enrollment" && (
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 max-w-3xl">
               <h3 className="text-xl font-bold text-slate-800 mb-2">Manually Enroll a Student</h3>
@@ -255,10 +340,29 @@ export default function SuperAdminDashboard() {
             </div>
           )}
 
-          {/* VOUCHERS TAB (Unchanged) */}
-          {activeTab === "vouchers" && ( <div>Vouchers Content...</div> )}
+          {activeTab === "vouchers" && (
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 max-w-2xl">
+              <h3 className="text-xl font-bold text-slate-800 mb-6">Create Discount Voucher</h3>
+              <form className="space-y-5" onSubmit={handleCreateVoucher}>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-1">Voucher Code <span className="text-red-500">*</span></label>
+                  <input type="text" name="voucherCode" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none uppercase" required />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-1">Discount Amount (Tk) <span className="text-red-500">*</span></label>
+                    <input type="number" name="discountAmount" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 mb-1">Validate Date <span className="text-red-500">*</span></label>
+                    <input type="date" name="validUntil" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none" required />
+                  </div>
+                </div>
+                <button type="submit" className="px-6 py-3 bg-purple-600 text-white font-bold rounded-xl">Create Voucher</button>
+              </form>
+            </div>
+          )}
 
-          {/* ADMINS & HISTORY TAB */}
           {activeTab === "admins" && (
             <div className="space-y-8">
               <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 max-w-3xl">
@@ -317,7 +421,7 @@ export default function SuperAdminDashboard() {
                           <td className="p-4 text-slate-600 text-sm">{history.ipDetails}</td>
                         </tr>
                       )) : (
-                        <tr><td colSpan={4} className="p-8 text-center text-slate-500">No real history found. Waiting for API.</td></tr>
+                        <tr><td colSpan={4} className="p-8 text-center text-slate-500">Waiting for API data.</td></tr>
                       )}
                     </tbody>
                   </table>
@@ -326,8 +430,24 @@ export default function SuperAdminDashboard() {
             </div>
           )}
 
-           {/* REVIEWS TAB (Unchanged) */}
-           {activeTab === "reviews" && ( <div>Reviews Content...</div> )}
+           {activeTab === "reviews" && (
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+              <h3 className="text-xl font-bold text-slate-800 mb-6">Total Course Reviews</h3>
+              <div className="space-y-4">
+                {reviews.length > 0 ? reviews.map((review, idx) => (
+                  <div key={idx} className="p-5 border border-slate-200 rounded-xl bg-slate-50 flex justify-between gap-4">
+                    <div>
+                      <h4 className="font-bold text-slate-800">{review.studentName}</h4>
+                      <p className="text-sm text-slate-700">{review.comment}</p>
+                    </div>
+                    <button onClick={() => handleDeleteReview(review.id)} className="px-3 py-1.5 bg-red-100 text-red-600 hover:bg-red-600 hover:text-white rounded-lg text-sm font-bold">Delete</button>
+                  </div>
+                )) : (
+                  <div className="p-8 text-center text-slate-500">Waiting for API data.</div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </div>
