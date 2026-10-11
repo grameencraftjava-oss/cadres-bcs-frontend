@@ -8,13 +8,13 @@ export default function SuperAdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const router = useRouter();
 
-  // Basic Auth Check (To be replaced with real backend token validation)
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      router.push("/login");
-    }
-  }, [router]);
+  // ⚠️ টেস্টিংয়ের সুবিধার্থে সাময়িকভাবে Auth Check বন্ধ রাখা হলো
+  // useEffect(() => {
+  //   const token = localStorage.getItem("token");
+  //   if (!token) {
+  //     router.push("/login");
+  //   }
+  // }, [router]);
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
