@@ -11,15 +11,9 @@ export default function SuperAdminDashboard() {
   // Basic Auth Check (To be replaced with real backend token validation)
   useEffect(() => {
     const token = localStorage.getItem("token");
-    const role = localStorage.getItem("userRole"); // This should come from your Spring Boot backend
-    
     if (!token) {
       router.push("/login");
     }
-    // Uncomment below when backend sends 'userRole'
-    // if (role !== 'SUPERADMIN') {
-    //   router.push("/dashboard"); 
-    // }
   }, [router]);
 
   return (
