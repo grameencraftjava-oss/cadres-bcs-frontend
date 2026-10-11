@@ -1,17 +1,13 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 export default function SuperAdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
-  const router = useRouter();
 
-  // State variables for real data from backend
+  // State variables
   const [stats, setStats] = useState({ totalSignups: 0, totalStudents: 0, activeEnrollments: 0, totalReviews: 0, bannedAccounts: 0 });
   const [students, setStudents] = useState<any[]>([]);
-  const [admins, setAdmins] = useState<any[]>([]);
   const [adminHistory, setAdminHistory] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
