@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 
-// Define strict types to prevent Vercel ESLint/TypeScript errors
 interface DashboardStats {
   totalSignups: number;
   totalStudents: number;
@@ -17,6 +16,7 @@ interface StudentData {
   phone: string;
   email: string;
   paidAmount?: number;
+  role?: string;
 }
 
 interface AdminHistoryData {
@@ -36,15 +36,14 @@ interface ReviewData {
 export default function SuperAdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
 
-  // State variables with strict types
   const [stats, setStats] = useState<DashboardStats>({ totalSignups: 0, totalStudents: 0, activeEnrollments: 0, totalReviews: 0, bannedAccounts: 0 });
   const [students, setStudents] = useState<StudentData[]>([]);
+  const [signups, setSignups] = useState<StudentData[]>([]);
   const [adminHistory, setAdminHistory] = useState<AdminHistoryData[]>([]);
   const [reviews, setReviews] = useState<ReviewData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // States for Manual Enroll Student Search
   const [enrollStudentId, setEnrollStudentId] = useState("");
   const [enrollStudentDetails, setEnrollStudentDetails] = useState<StudentData>({ name: "", email: "", phone: "" });
 
@@ -54,24 +53,26 @@ export default function SuperAdminDashboard() {
     setIsLoading(true);
     setErrorMsg("");
     try {
-      const token = localStorage.getItem("token");
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : "";
       const headers = { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" };
 
-      const [statsRes, studentsRes, historyRes, reviewsRes] = await Promise.all([
+      const [statsRes, studentsRes, signupsRes, historyRes, reviewsRes] = await Promise.all([
         fetch(`${BACKEND_URL}/api/admin/stats`, { headers }).catch(() => null),
         fetch(`${BACKEND_URL}/api/admin/students`, { headers }).catch(() => null),
+        fetch(`${BACKEND_URL}/api/admin/signups`, { headers }).catch(() => null),
         fetch(`${BACKEND_URL}/api/admin/history`, { headers }).catch(() => null),
         fetch(`${BACKEND_URL}/api/admin/reviews`, { headers }).catch(() => null)
       ]);
 
       if (statsRes?.ok) setStats(await statsRes.json());
       if (studentsRes?.ok) setStudents(await studentsRes.json());
+      if (signupsRes?.ok) setSignups(await signupsRes.json());
       if (historyRes?.ok) setAdminHistory(await historyRes.json());
       if (reviewsRes?.ok) setReviews(await reviewsRes.json());
 
     } catch (error) {
       console.error("Error fetching data:", error);
-      setErrorMsg("Failed to connect to backend server. Make sure APIs are running.");
+      setErrorMsg("Failed to connect to backend server.");
     } finally {
       setIsLoading(false);
     }
@@ -82,19 +83,19 @@ export default function SuperAdminDashboard() {
   const handleStudentSearch = async () => {
       if(!enrollStudentId) return;
       try {
-          const token = localStorage.getItem("token");
+          const token = typeof window !== "undefined" ? localStorage.getItem("token") : "";
           const res = await fetch(`${BACKEND_URL}/api/admin/student-by-id?id=${enrollStudentId}`, {
               headers: { "Authorization": `Bearer ${token}` }
           });
           if(res.ok) {
               const data = await res.json();
-              setEnrollStudentDetails({ name: data.name, email: data.email, phone: data.phone });
+              setEnrollStudentDetails({ name: data.name, email: data.email, phone: data.phone || "" });
           } else {
               alert("Student not found!");
               setEnrollStudentDetails({ name: "", email: "", phone: "" });
           }
-      } catch(e) {
-          console.error("Search failed", e);
+      } catch(error) {
+          console.error("Search failed", error);
       }
   };
 
@@ -108,9 +109,10 @@ export default function SuperAdminDashboard() {
     data.studentName = enrollStudentDetails.name;
 
     try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : "";
       const response = await fetch(`${BACKEND_URL}/api/admin/enroll`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${localStorage.getItem("token")}` },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify(data),
       });
 
@@ -120,7 +122,7 @@ export default function SuperAdminDashboard() {
         setEnrollStudentDetails({ name: "", email: "", phone: "" });
         fetchDashboardData();
       } else {
-        alert("❌ Failed to enroll student. " + await response.text());
+        alert("❌ Failed to enroll student.");
       }
     } catch (error) {
       console.error(error);
@@ -135,9 +137,10 @@ export default function SuperAdminDashboard() {
     const data = Object.fromEntries(formData.entries());
 
     try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : "";
       const response = await fetch(`${BACKEND_URL}/api/admin/vouchers`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${localStorage.getItem("token")}` },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify(data),
       });
 
@@ -145,11 +148,11 @@ export default function SuperAdminDashboard() {
         alert("✅ Voucher Created Successfully!");
         form.reset();
       } else {
-        alert("❌ Failed to create voucher. " + await response.text());
+        alert("❌ Failed to create voucher.");
       }
     } catch (error) {
       console.error(error);
-      alert("❌ Server Error: Cannot connect to backend API.");
+      alert("❌ Server Error.");
     }
   };
 
@@ -160,9 +163,10 @@ export default function SuperAdminDashboard() {
     const data = Object.fromEntries(formData.entries());
 
     try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : "";
       const response = await fetch(`${BACKEND_URL}/api/admin/assign-role`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${localStorage.getItem("token")}` },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify(data),
       });
 
@@ -171,23 +175,22 @@ export default function SuperAdminDashboard() {
         form.reset();
         fetchDashboardData();
       } else {
-        alert("❌ Failed to assign role. " + await response.text());
+        alert("❌ Failed to assign role.");
       }
     } catch (error) {
       console.error(error);
-      alert("❌ Server Error: Cannot connect to backend API.");
+      alert("❌ Server Error.");
     }
   };
 
   const handleDeleteReview = async (reviewId: string) => {
-    if (!confirm("Are you sure you want to delete this review? This action cannot be undone.")) return;
-
+    if (!confirm("Are you sure you want to delete this review?")) return;
     try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : "";
       const response = await fetch(`${BACKEND_URL}/api/admin/reviews/${reviewId}`, {
         method: "DELETE",
-        headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` },
+        headers: { "Authorization": `Bearer ${token}` },
       });
-
       if (response.ok) {
         alert("✅ Review deleted successfully!");
         fetchDashboardData();
@@ -196,7 +199,7 @@ export default function SuperAdminDashboard() {
       }
     } catch (error) {
       console.error(error);
-      alert("❌ Server Error: Cannot connect to backend API.");
+      alert("❌ Server Error.");
     }
   };
 
@@ -209,6 +212,7 @@ export default function SuperAdminDashboard() {
           <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
           {[
             { id: "overview", name: "Overview" },
+            { id: "signups", name: "All Signups" },
             { id: "courses", name: "Courses & Students" },
             { id: "enrollment", name: "Manual Enroll" },
             { id: "vouchers", name: "Vouchers & Offers" },
@@ -231,7 +235,6 @@ export default function SuperAdminDashboard() {
         </header>
 
         <div className="p-8">
-          
           {errorMsg && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 font-semibold text-sm">
               {errorMsg}
@@ -255,20 +258,42 @@ export default function SuperAdminDashboard() {
             </div>
           )}
 
-          {activeTab === "courses" && (
+          {activeTab === "signups" && (
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
               <div className="flex justify-between items-end mb-6">
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Filter by Course</label>
-                  <select className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none font-semibold text-slate-700">
-                    <option value="all">All Courses</option>
-                  </select>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-slate-500 font-semibold">Total Students in this course</p>
-                  <p className="text-2xl font-black text-blue-600">{students.length || 0}</p>
-                </div>
+                <h3 className="text-xl font-bold text-slate-800">All Registered Users</h3>
               </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 text-slate-500 text-sm border-y border-slate-200">
+                      <th className="p-4 font-bold">User Details</th>
+                      <th className="p-4 font-bold">Phone Number</th>
+                      <th className="p-4 font-bold">Role</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {signups.length > 0 ? signups.map((user, idx) => (
+                      <tr key={idx} className="border-b border-slate-100">
+                        <td className="p-4">
+                          <div className="font-bold text-slate-800">{user.name}</div>
+                          <div className="text-xs text-slate-500">{user.email}</div>
+                        </td>
+                        <td className="p-4 text-slate-600 font-medium">{user.phone || "N/A"}</td>
+                        <td className="p-4"><span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-bold rounded uppercase">{user.role || "STUDENT"}</span></td>
+                      </tr>
+                    )) : (
+                      <tr><td colSpan={3} className="p-8 text-center text-slate-500">Waiting for API data.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "courses" && (
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+              <h3 className="text-xl font-bold text-slate-800 mb-6">Courses & Students</h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
@@ -306,7 +331,7 @@ export default function SuperAdminDashboard() {
               <div className="mb-6 flex gap-2 items-end bg-slate-100 p-4 rounded-xl border border-slate-200">
                   <div className="flex-1">
                       <label className="block text-sm font-bold text-slate-700 mb-1">Search by Student ID</label>
-                      <input type="text" value={enrollStudentId} onChange={(e)=>setEnrollStudentId(e.target.value)} className="w-full px-4 py-2 border rounded-lg outline-none" placeholder="Enter ID to auto-fill details" />
+                      <input type="text" value={enrollStudentId} onChange={(e)=>setEnrollStudentId(e.target.value)} className="w-full px-4 py-2 border rounded-lg outline-none" placeholder="Enter Database ID" />
                   </div>
                   <button type="button" onClick={handleStudentSearch} className="px-4 py-2 bg-slate-800 text-white font-bold rounded-lg hover:bg-slate-700">Search</button>
               </div>
@@ -349,9 +374,13 @@ export default function SuperAdminDashboard() {
                     <option value="bank">Bank Transfer</option>
                   </select>
                 </div>
-                 <div className="col-span-2">
+                 <div className="col-span-2 md:col-span-1">
                   <label className="block text-sm font-bold text-slate-700 mb-1">Receiver Account Name <span className="text-red-500">*</span></label>
-                  <input type="text" name="receiverAccountName" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Name of the account that received money" required />
+                  <input type="text" name="receiverAccountName" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="Account Holder Name" required />
+                </div>
+                <div className="col-span-2 md:col-span-1">
+                  <label className="block text-sm font-bold text-slate-700 mb-1">Receiver Number <span className="text-red-500">*</span></label>
+                  <input type="text" name="receiverNumber" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="e.g. 017XXXXXX" required />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">Transaction Number (TrxID) <span className="text-red-500">*</span></label>
