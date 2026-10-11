@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface DashboardStats {
   totalSignups: number;
@@ -35,6 +36,7 @@ interface ReviewData {
 
 export default function SuperAdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
+  const router = useRouter();
 
   const [stats, setStats] = useState<DashboardStats>({ totalSignups: 0, totalStudents: 0, activeEnrollments: 0, totalReviews: 0, bannedAccounts: 0 });
   const [students, setStudents] = useState<StudentData[]>([]);
@@ -78,7 +80,31 @@ export default function SuperAdminDashboard() {
     }
   };
 
-  useEffect(() => { fetchDashboardData(); }, []);
+  // 🛡️ STRICT SECURITY GUARD 🛡️
+  useEffect(() => {
+    const checkSecurityAndLoad = () => {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const role = typeof window !== "undefined" ? localStorage.getItem("userRole") : null;
+
+      // ১. যদি টোকেন না থাকে (মানে লগইন করা নেই)
+      if (!token) {
+        router.push("/login");
+        return;
+      }
+      
+      // ২. যদি লগইন করা থাকে, কিন্তু তার রোল "SUPERADMIN" না হয়
+      if (role !== "SUPERADMIN") {
+        alert("❌ Access Denied! You don't have Super Admin privileges.");
+        router.push("/"); // হোম পেজে বের করে দেবে
+        return;
+      }
+
+      // ৩. সব সিকিউরিটি চেক পাস করলে ডেটা লোড করবে
+      fetchDashboardData();
+    };
+
+    checkSecurityAndLoad();
+  }, [router]);
 
   const handleStudentSearch = async () => {
       if(!enrollStudentId) return;
@@ -203,6 +229,14 @@ export default function SuperAdminDashboard() {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("userEmail");
+    localStorage.removeItem("userName");
+    router.push("/login");
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 flex">
       <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col hidden md:flex shrink-0 h-screen sticky top-0">
@@ -224,6 +258,11 @@ export default function SuperAdminDashboard() {
             </button>
           ))}
         </nav>
+        <div className="p-4 border-t border-slate-800">
+          <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded-lg transition-colors font-bold text-sm">
+            Logout
+          </button>
+        </div>
       </aside>
 
       <main className="flex-1 flex flex-col h-screen overflow-y-auto">
