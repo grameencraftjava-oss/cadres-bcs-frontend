@@ -83,9 +83,14 @@ export default function Login() {
         setTimeout(() => { router.push("/dashboard"); }, 1000);
       } catch (error) {
         console.error(error);
-        // Removed the strict 'any' typing that caused Vercel build to fail
-        if (error instanceof Error && error.message.includes('api-key')) {
-           setMessage("❌ Firebase API Key বসানো হয়নি! .env.local ফাইল চেক করুন।");
+        if (error instanceof Error) {
+           if (error.message.includes('popup-blocked') || error.message.includes('Popup closed')) {
+              setMessage("❌ পপ-আপ ব্লকড! দয়া করে লিংকটি Chrome ব্রাউজারে ওপেন করুন।");
+           } else if (error.message.includes('unauthorized-domain')) {
+              setMessage("❌ ডোমেইনটি Firebase-এ যুক্ত নেই! Authorised domains-এ লিংকটি অ্যাড করুন।");
+           } else {
+              setMessage(`❌ ${error.message}`);
+           }
         } else {
            setMessage("❌ Google Login Failed. Try again.");
         }
