@@ -31,18 +31,15 @@ export default function DashboardPage() {
 
   const fetchDashboardData = async (email: string, token: string) => {
     try {
-      // Fetch Profile Data
       const profileRes = await fetch(`${BACKEND_URL}/api/profile/${email}`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (profileRes.ok) {
         const profileData = await profileRes.json();
         setProfile(profileData);
-        // Profile update hole localStorage o update kore rakhi
         if(profileData.name) localStorage.setItem("userName", profileData.name);
       }
 
-      // Fetch Courses Data
       const coursesRes = await fetch(`${BACKEND_URL}/api/enrollments/dashboard/${email}`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -113,7 +110,6 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
       <div className="max-w-5xl mx-auto space-y-6">
         
-        {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-center bg-white p-6 rounded-xl shadow-sm border border-gray-100 gap-4">
           <div>
             <h1 className="text-2xl font-extrabold text-blue-900">Cadre&apos;s BCS Compass</h1>
@@ -130,7 +126,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Profile Section */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <div className="flex justify-between items-center mb-6">
              <h2 className="text-xl font-bold text-gray-800">আমার প্রোফাইল</h2>
@@ -198,7 +193,6 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* My Enrolled Courses */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h2 className="text-xl font-bold text-gray-800 mb-4">আমার কোর্সসমূহ</h2>
           {courses.length === 0 ? (
@@ -222,11 +216,9 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Available Courses / Store */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h2 className="text-xl font-bold text-gray-800 mb-4">নতুন কোর্সে ভর্তি হোন</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Dummy Course for Store */}
               <div className="border border-orange-100 bg-orange-50/30 p-5 rounded-xl">
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="text-lg font-bold text-gray-900">47th BCS Preliminary</h3>
