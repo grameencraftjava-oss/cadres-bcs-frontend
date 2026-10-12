@@ -1,8 +1,8 @@
 "use client";
 import { useState } from "react";
 import { signInWithPopup } from "firebase/auth";
-import { auth, googleProvider } from "../../lib/firebase"; // Import fixed
-import { useRouter } from "next/navigation"; // Next.js Router added
+import { auth, googleProvider } from "../../lib/firebase"; 
+import { useRouter } from "next/navigation";
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
@@ -15,7 +15,7 @@ export default function Login() {
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const router = useRouter(); // Router initialized
+  const router = useRouter();
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,13 +44,16 @@ export default function Login() {
       if (response.ok && data.includes("Success")) {
         const tokenString = data.split("Token: ")[1];
         const actualToken = tokenString ? tokenString.split(" Role:")[0].trim() : "auth-token";
+        
+        // ব্যাকএন্ড থেকে ইউজারের রোল বের করা হচ্ছে
+        const roleString = data.includes("Role:") ? data.split("Role:")[1].trim() : "STUDENT";
 
         localStorage.setItem("token", actualToken);
         localStorage.setItem("userEmail", emailOrPhone);
+        localStorage.setItem("userRole", roleString); // এই লাইনটি মিসিং ছিল!
 
         setMessage("Success! Redirecting to dashboard...");
 
-        // Optimized Next.js Routing
         setTimeout(() => {
           router.push("/dashboard");
         }, 1000);
@@ -89,14 +92,17 @@ export default function Login() {
       if (response.ok && data.includes("Success")) {
         const tokenString = data.split("Token: ")[1];
         const actualToken = tokenString ? tokenString.split(" Role:")[0].trim() : "auth-token";
+        
+        // গুগল লগইনের সময়ও রোল বের করা হচ্ছে
+        const roleString = data.includes("Role:") ? data.split("Role:")[1].trim() : "STUDENT";
 
         localStorage.setItem("token", actualToken);
         localStorage.setItem("userEmail", user.email || "");
         localStorage.setItem("userName", user.displayName || "");
+        localStorage.setItem("userRole", roleString); // এই লাইনটি মিসিং ছিল!
 
         setMessage("Success! Redirecting to dashboard...");
-
-        // Optimized Next.js Routing
+        
         setTimeout(() => {
           router.push("/dashboard");
         }, 1000);
