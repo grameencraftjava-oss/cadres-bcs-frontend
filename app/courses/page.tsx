@@ -23,7 +23,7 @@ export default function CoursesPage() {
         </div>
       </div>
 
-      <footer className="bg-slate-900 text-white py-16">
+      <footer className="bg-slate-900 text-white py-16 mt-auto">
         <div className="max-w-7xl mx-auto px-4 md:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
             <div>
