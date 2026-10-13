@@ -143,8 +143,20 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 font-sans">
+      {/* Top Header with Logo & Title (হুবহু image_9891e4.png এর মতো) */}
+      <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 h-16 sm:h-20 flex items-center justify-center sm:justify-start">
+          <Link href="/" className="flex items-center gap-2.5 sm:gap-3">
+            <img src="/logo.png" alt="CBC Logo" className="w-9 h-9 sm:w-11 sm:h-11 object-contain shrink-0" />
+            <span className="text-lg sm:text-xl md:text-2xl font-extrabold text-slate-900 tracking-tight whitespace-nowrap">
+              Cadre&apos;s BCS Compass-<span className="text-blue-600">CBC</span>
+            </span>
+          </Link>
+        </div>
+      </header>
+
       {/* Main Login Card Area */}
-      <div className="flex-grow flex items-center justify-center p-4 py-16">
+      <div className="flex-grow flex items-center justify-center p-4 py-12 sm:py-16">
         <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-lg border border-gray-100 relative">
           <Link href="/" className="inline-flex items-center gap-1 text-sm font-bold text-gray-500 hover:text-blue-600 mb-4 transition">
             <span>←</span> হোম পেজ
