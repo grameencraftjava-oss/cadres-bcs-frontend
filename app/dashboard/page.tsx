@@ -154,6 +154,7 @@ export default function DashboardPage() {
         fetch(`${BACKEND_URL}/api/portal/suggestions`).catch(() => null),
         fetch(`${BACKEND_URL}/api/portal/youtube-classes`).catch(() => null),
         fetch(`${BACKEND_URL}/api/notifications/${email}`, { headers }).catch(() => null),
+        fetch(`${BACKEND_URL}/api/notifications/${email}`, { headers }).catch(() => null),
       ]);
 
       if (profileRes?.ok) {
@@ -186,6 +187,7 @@ export default function DashboardPage() {
       if (coursesRes?.ok) setAllCourses(await coursesRes.json());
       if (suggRes?.ok) setSuggestions(await suggRes.json());
       if (ytRes?.ok) setYoutubeClasses(await ytRes.json());
+      if (notifRes?.ok) setNotifications(await notifRes.json());
       if (notifRes?.ok) setNotifications(await notifRes.json());
     } catch (err) {
       console.error("Dashboard fetch error:", err);
