@@ -35,6 +35,14 @@ interface PortalContent {
   youtubeUrl: string;
 }
 
+interface NotificationItem {
+  id: number;
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+}
+
 interface UserProfile {
   name: string;
   email: string;
@@ -145,6 +153,7 @@ export default function DashboardPage() {
         fetch(`${BACKEND_URL}/api/portal/courses`).catch(() => null),
         fetch(`${BACKEND_URL}/api/portal/suggestions`).catch(() => null),
         fetch(`${BACKEND_URL}/api/portal/youtube-classes`).catch(() => null),
+        fetch(`${BACKEND_URL}/api/notifications/${email}`, { headers }).catch(() => null),
       ]);
 
       if (profileRes?.ok) {
@@ -177,6 +186,7 @@ export default function DashboardPage() {
       if (coursesRes?.ok) setAllCourses(await coursesRes.json());
       if (suggRes?.ok) setSuggestions(await suggRes.json());
       if (ytRes?.ok) setYoutubeClasses(await ytRes.json());
+      if (notifRes?.ok) setNotifications(await notifRes.json());
     } catch (err) {
       console.error("Dashboard fetch error:", err);
     } finally {
@@ -297,7 +307,7 @@ export default function DashboardPage() {
                 <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
-                <span className="absolute top-2 right-2.5 w-2 h-2 bg-blue-600 rounded-full"></span>
+                {notifications.some(n => !n.read) && <span className="absolute top-2 right-2.5 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>}
               </button>
 
               {showNotifMenu && (
@@ -306,8 +316,24 @@ export default function DashboardPage() {
                     <h3 className="font-extrabold text-gray-800 text-sm">নোটিফিকেশন</h3>
                     <span className="text-[11px] bg-blue-50 text-blue-600 font-bold px-2 py-0.5 rounded-full">নতুন</span>
                   </div>
-                  <div className="p-6 text-center">
-                    <p className="text-sm text-gray-500 font-medium">বর্তমানে নতুন কোনো নোটিফিকেশন নেই।</p>
+                  <div className="max-h-80 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="p-6 text-center">
+                        <p className="text-sm text-gray-500 font-medium">কোনো নোটিফিকেশন নেই।</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col divide-y divide-gray-100">
+                        {notifications.map(n => (
+                          <div key={n.id} className={`p-4 hover:bg-gray-50 transition ${n.read ? "opacity-75" : "bg-blue-50/30"}`}>
+                            <h4 className="text-sm font-bold text-gray-800">{n.title}</h4>
+                            <p className="text-xs text-gray-600 mt-1 line-clamp-2">{n.message}</p>
+                            <p className="text-[10px] text-gray-400 mt-2 font-medium">
+                              {new Date(n.createdAt).toLocaleDateString("bn-BD")} • {new Date(n.createdAt).toLocaleTimeString("bn-BD", {hour: '2-digit', minute:'2-digit'})}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
