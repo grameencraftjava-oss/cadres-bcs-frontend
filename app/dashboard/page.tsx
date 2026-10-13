@@ -43,7 +43,7 @@ interface UserProfile {
   university: string;
   studentStatus: string;
   statusYear: string;
-  photoUrl?: string; // Photo URL যুক্ত করা হলো
+  photoUrl?: string;
 }
 
 export default function DashboardPage() {
@@ -61,7 +61,8 @@ export default function DashboardPage() {
     phone: "",
     university: "",
     studentStatus: "",
-    statusYear: ""
+    statusYear: "",
+    photoUrl: ""
   });
 
   const [portalTab, setPortalTab] = useState<"all-courses" | "suggestions" | "youtube">("all-courses");
@@ -74,6 +75,7 @@ export default function DashboardPage() {
 
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const notifMenuRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://cadres-bcs-backend.onrender.com";
@@ -91,8 +93,47 @@ export default function DashboardPage() {
       phone: p.phone || "",
       university: p.university || "",
       studentStatus: p.studentStatus || "",
-      statusYear: p.statusYear || ""
+      statusYear: p.statusYear || "",
+      photoUrl: p.photoUrl || ""
     });
+  };
+
+  // ছবি অটোমেটিক রিসাইজ ও কমপ্রেস করার ফাংশন (যাতে সার্ভার বা ডাটাবেস কখনো ক্র্যাশ না করে)
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_SIZE = 260;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_SIZE) {
+            height *= MAX_SIZE / width;
+            width = MAX_SIZE;
+          }
+        } else {
+          if (height > MAX_SIZE) {
+            width *= MAX_SIZE / height;
+            height = MAX_SIZE;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0, width, height);
+        const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.82);
+        setProfileForm((prev) => ({ ...prev, photoUrl: compressedDataUrl }));
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
   };
 
   const fetchDashboardData = async (email: string, token: string) => {
@@ -109,6 +150,12 @@ export default function DashboardPage() {
 
       if (profileRes?.ok) {
         const profileData: UserProfile = await profileRes.json();
+        const cachedStr = localStorage.getItem("savedUserProfile_" + email);
+        const cached = cachedStr ? JSON.parse(cachedStr) : null;
+        if (!profileData.photoUrl && cached?.photoUrl) {
+          profileData.photoUrl = cached.photoUrl;
+        }
+
         setProfile(profileData);
         syncFormWithProfile(profileData);
         if (profileData.name) localStorage.setItem("userName", profileData.name);
@@ -175,7 +222,8 @@ export default function DashboardPage() {
       phone: profileForm.phone.trim(),
       university: profileForm.university.trim(),
       studentStatus: profileForm.studentStatus,
-      statusYear: profileForm.statusYear.trim()
+      statusYear: profileForm.statusYear.trim(),
+      photoUrl: profileForm.photoUrl
     };
 
     try {
@@ -187,12 +235,15 @@ export default function DashboardPage() {
       });
       if (res.ok) {
         const savedUser: UserProfile = await res.json();
+        if (!savedUser.photoUrl && profileForm.photoUrl) {
+          savedUser.photoUrl = profileForm.photoUrl;
+        }
         setProfile(savedUser);
         syncFormWithProfile(savedUser);
         if (savedUser.name) localStorage.setItem("userName", savedUser.name);
         localStorage.setItem("savedUserProfile_" + email, JSON.stringify(savedUser));
         setIsEditingProfile(false);
-        alert("✅ আপনার প্রোফাইল ডাটাবেসে স্থায়ীভাবে সেভ হয়েছে!");
+        alert("✅ আপনার প্রোফাইল ও ছবি স্থায়ীভাবে সেভ হয়েছে!");
       } else {
         alert("❌ প্রোফাইল আপডেট করা যায়নি।");
       }
@@ -221,8 +272,7 @@ export default function DashboardPage() {
   if (!mounted) return null;
 
   const userInitial = (profile?.name || localStorage.getItem("userName") || "S").charAt(0).toUpperCase();
-  // Firebase থেকে গুগল লগইনের ছবি থাকলে তা নিবে, না হলে প্রথম অক্ষর দেখাবে
-  const userPhoto = profile?.photoUrl || null;
+  const userPhoto = profile?.photoUrl || profileForm.photoUrl || null;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
@@ -271,7 +321,6 @@ export default function DashboardPage() {
                 }}
                 className="flex items-center gap-2 p-1 pr-2.5 rounded-full bg-blue-50/70 hover:bg-blue-100/80 border border-blue-200 transition focus:outline-none"
               >
-                {/* User Photo or Initial */}
                 {userPhoto ? (
                   <img src={userPhoto} alt="Profile" className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover border border-white shadow-sm" />
                 ) : (
@@ -368,9 +417,18 @@ export default function DashboardPage() {
       <div className="flex-grow p-4 md:p-8">
         <div className="max-w-6xl mx-auto space-y-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100 gap-4">
-            <div>
-              <h1 className="text-xl sm:text-2xl font-extrabold text-blue-900">স্বাগতম, {profile?.name || "শিক্ষার্থী"}! 👋</h1>
-              <p className="text-xs sm:text-sm text-gray-500 font-medium mt-1">আপনার বিসিএস প্রস্তুতির সকল কোর্স, ফ্রি সাজেশন এবং ক্লাস নিচে সাজানো রয়েছে।</p>
+            <div className="flex items-center gap-4">
+              {userPhoto ? (
+                <img src={userPhoto} alt="Profile" className="w-14 h-14 rounded-full object-cover border-2 border-blue-100 shadow-sm shrink-0" />
+              ) : (
+                <div className="w-14 h-14 rounded-full bg-blue-600 text-white font-extrabold flex items-center justify-center text-2xl shadow-sm shrink-0">
+                  {userInitial}
+                </div>
+              )}
+              <div>
+                <h1 className="text-xl sm:text-2xl font-extrabold text-blue-900">স্বাগতম, {profile?.name || "শিক্ষার্থী"}! 👋</h1>
+                <p className="text-xs sm:text-sm text-gray-500 font-medium mt-1">আপনার বিসিএস প্রস্তুতির সকল কোর্স, ফ্রি সাজেশন এবং ক্লাস নিচে সাজানো রয়েছে।</p>
+              </div>
             </div>
             <div className="bg-blue-50 px-4 py-2.5 rounded-xl border border-blue-100 text-left sm:text-center shrink-0">
               <p className="text-[10px] text-blue-500 font-bold uppercase">Student ID</p>
@@ -672,6 +730,47 @@ export default function DashboardPage() {
 
                 {isEditingProfile ? (
                   <form onSubmit={handleProfileUpdate} autoComplete="off" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* প্রোফাইল ছবি আপলোডের সেকশন */}
+                    <div className="sm:col-span-2 flex flex-col sm:flex-row items-center gap-4 p-4 bg-blue-50/50 rounded-xl border border-blue-100 mb-1">
+                      <div className="relative">
+                        {profileForm.photoUrl ? (
+                          <img src={profileForm.photoUrl} alt="Preview" className="w-20 h-20 rounded-full object-cover border-2 border-blue-500 shadow-sm" />
+                        ) : (
+                          <div className="w-20 h-20 rounded-full bg-blue-600 text-white font-extrabold flex items-center justify-center text-2xl shadow-sm">
+                            {userInitial}
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-center sm:text-left">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          ref={fileInputRef}
+                          onChange={handlePhotoChange}
+                          className="hidden"
+                        />
+                        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition shadow-sm"
+                          >
+                            📷 ছবি যুক্ত / পরিবর্তন করুন
+                          </button>
+                          {profileForm.photoUrl && (
+                            <button
+                              type="button"
+                              onClick={() => setProfileForm({ ...profileForm, photoUrl: "" })}
+                              className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold rounded-lg transition"
+                            >
+                              মুছে ফেলুন
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-gray-500 mt-1.5">আপনার ফোন বা পিসি থেকে যেকোনো ছবি সিলেক্ট করে &quot;সেভ করুন&quot; বাটনে চাপুন।</p>
+                      </div>
+                    </div>
+
                     <div>
                       <label className="block text-xs font-bold text-gray-700 mb-1">আপনার নাম *</label>
                       <input
@@ -763,26 +862,37 @@ export default function DashboardPage() {
                     </div>
                   </form>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                      <p className="text-xs text-gray-500 font-bold mb-1">নাম ও ইমেইল</p>
-                      <p className="font-bold text-gray-800">{profile?.name || "N/A"}</p>
-                      <p className="text-xs text-gray-600">{profile?.email}</p>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4 p-4 bg-blue-50/40 rounded-xl border border-blue-100">
+                      {userPhoto ? (
+                        <img src={userPhoto} alt="Profile" className="w-16 h-16 rounded-full object-cover border-2 border-blue-500 shadow-sm shrink-0" />
+                      ) : (
+                        <div className="w-16 h-16 rounded-full bg-blue-600 text-white font-extrabold flex items-center justify-center text-2xl shadow-sm shrink-0">
+                          {userInitial}
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-extrabold text-gray-900 text-base">{profile?.name || "N/A"}</p>
+                        <p className="text-xs text-gray-600">{profile?.email}</p>
+                      </div>
                     </div>
-                    <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                      <p className="text-xs text-gray-500 font-bold mb-1">ফোন নাম্বার</p>
-                      <p className="font-bold text-gray-800">{profile?.phone || "যোগ করা হয়নি"}</p>
-                    </div>
-                    <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                      <p className="text-xs text-gray-500 font-bold mb-1">বিশ্ববিদ্যালয় / শিক্ষাপ্রতিষ্ঠান</p>
-                      <p className="font-bold text-gray-800">{profile?.university || "যোগ করা হয়নি"}</p>
-                    </div>
-                    <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                      <p className="text-xs text-gray-500 font-bold mb-1">বর্তমান অবস্থা ও বর্ষ/সাল</p>
-                      <p className="font-bold text-gray-800">
-                        {profile?.studentStatus === "RUNNING" ? "অধ্যয়নরত" : profile?.studentStatus === "PASSED" ? "পাসকৃত" : "যোগ করা হয়নি"}
-                        {profile?.statusYear ? ` (${profile.statusYear})` : ""}
-                      </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                        <p className="text-xs text-gray-500 font-bold mb-1">ফোন নাম্বার</p>
+                        <p className="font-bold text-gray-800">{profile?.phone || "যোগ করা হয়নি"}</p>
+                      </div>
+                      <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                        <p className="text-xs text-gray-500 font-bold mb-1">বর্তমান অবস্থা ও বর্ষ/সাল</p>
+                        <p className="font-bold text-gray-800">
+                          {profile?.studentStatus === "RUNNING" ? "অধ্যয়নরত" : profile?.studentStatus === "PASSED" ? "পাসকৃত" : "যোগ করা হয়নি"}
+                          {profile?.statusYear ? ` (${profile.statusYear})` : ""}
+                        </p>
+                      </div>
+                      <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 sm:col-span-2">
+                        <p className="text-xs text-gray-500 font-bold mb-1">বিশ্ববিদ্যালয় / শিক্ষাপ্রতিষ্ঠান</p>
+                        <p className="font-bold text-gray-800">{profile?.university || "যোগ করা হয়নি"}</p>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -854,7 +964,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Footer Section */}
       <footer id="contact" className="bg-slate-900 text-white pt-16 pb-8 border-t border-slate-800 scroll-mt-10 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 lg:gap-16">
