@@ -49,30 +49,25 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50 font-sans flex flex-col">
       {/* Navbar */}
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16 md:h-20">
-            <div className="flex-shrink-0 flex items-center gap-2 md:gap-3 cursor-pointer" onClick={() => window.scrollTo(0,0)}>
-              <div className="w-10 h-10 md:w-14 md:h-14 bg-white rounded-full overflow-hidden flex items-center justify-center border border-gray-100">
-                <img src="/logo.png" alt="CBC Logo" className="w-full h-full object-contain p-0.5 md:p-1" />
-              </div>
-              <h1 className="text-sm sm:text-lg md:text-2xl font-extrabold text-gray-800 tracking-tight">
-                Cadre&apos;s BCS Compass-<span className="text-blue-700">CBC</span>
-              </h1>
-            </div>
+      <header className="bg-white/95 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 h-16 sm:h-20 flex items-center justify-between gap-2">
+          <Link href="/" className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <img src="/logo.png" alt="CBC Logo" className="w-8 h-8 sm:w-10 sm:h-10 object-contain shrink-0" />
+            <span className="text-[13px] sm:text-lg md:text-xl font-extrabold text-gray-900 tracking-tight whitespace-nowrap">
+              Cadre&apos;s BCS Compass-<span className="text-blue-600">CBC</span>
+            </span>
+          </Link>
 
-            {/* Desktop Menu */}
-            <div className="hidden md:flex space-x-8">
-              <Link href="/courses" className="text-gray-700 hover:text-blue-600 font-semibold transition">কোর্সসমূহ</Link>
-              <a href="#about" className="text-gray-700 hover:text-blue-600 font-semibold transition">আমাদের সম্পর্কে</a>
-              <a href="#contact" className="text-gray-700 hover:text-blue-600 font-semibold transition">যোগাযোগ</a>
-            </div>
+          <nav className="hidden md:flex items-center gap-8 text-sm font-bold text-gray-700 shrink-0">
+            <Link href="/courses" className="hover:text-blue-600 transition">কোর্সসমূহ</Link>
+            <Link href="/#about" className="hover:text-blue-600 transition">আমাদের সম্পর্কে</Link>
+            <Link href="#contact" className="hover:text-blue-600 transition">যোগাযোগ</Link>
+          </nav>
 
-            <div className="flex items-center">
-              <Link href="/login" className="px-5 py-2 md:px-8 md:py-3 bg-blue-600 text-white text-sm md:text-base font-bold rounded-lg md:rounded-xl hover:bg-blue-700 shadow-md transition whitespace-nowrap">
-                লগইন / সাইন আপ
-              </Link>
-            </div>
+          <div className="shrink-0">
+            <Link href="/login" className="inline-block whitespace-nowrap bg-blue-600 text-white text-xs sm:text-sm font-bold px-4 py-2 sm:px-6 sm:py-2.5 rounded-full hover:bg-blue-700 transition shadow-sm">
+              লগইন / সাইন আপ
+            </Link>
           </div>
         </div>
       </header>

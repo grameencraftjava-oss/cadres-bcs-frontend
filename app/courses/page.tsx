@@ -13,31 +13,25 @@ export default function CoursesPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
       {/* Mobile Responsive Top Navbar */}
-      <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 md:px-8 h-16 sm:h-20 flex items-center justify-between gap-2">
+      <header className="bg-white/95 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 h-16 sm:h-20 flex items-center justify-between gap-2">
           <Link href="/" className="flex items-center gap-2 sm:gap-3 min-w-0">
             <img src="/logo.png" alt="CBC Logo" className="w-8 h-8 sm:w-10 sm:h-10 object-contain shrink-0" />
-            <span className="text-sm sm:text-lg md:text-xl font-extrabold text-gray-900 truncate">
+            <span className="text-[13px] sm:text-lg md:text-xl font-extrabold text-gray-900 tracking-tight whitespace-nowrap">
               Cadre&apos;s BCS Compass-<span className="text-blue-600">CBC</span>
             </span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-8 text-sm font-bold text-gray-700 shrink-0">
-            <Link href="/courses" className="text-blue-600 transition">কোর্সসমূহ</Link>
+            <Link href="/courses" className="hover:text-blue-600 transition">কোর্সসমূহ</Link>
             <Link href="/#about" className="hover:text-blue-600 transition">আমাদের সম্পর্কে</Link>
             <Link href="#contact" className="hover:text-blue-600 transition">যোগাযোগ</Link>
           </nav>
 
           <div className="shrink-0">
-            {isLoggedIn ? (
-              <Link href="/dashboard" className="inline-block whitespace-nowrap bg-blue-600 text-white text-xs sm:text-sm font-bold px-3.5 py-2 sm:px-6 sm:py-2.5 rounded-xl hover:bg-blue-700 transition shadow-sm">
-                ড্যাশবোর্ড
-              </Link>
-            ) : (
-              <Link href="/login" className="inline-block whitespace-nowrap bg-blue-600 text-white text-xs sm:text-sm font-bold px-3.5 py-2 sm:px-6 sm:py-2.5 rounded-xl hover:bg-blue-700 transition shadow-sm">
-                লগইন / সাইন আপ
-              </Link>
-            )}
+            <Link href="/login" className="inline-block whitespace-nowrap bg-blue-600 text-white text-xs sm:text-sm font-bold px-4 py-2 sm:px-6 sm:py-2.5 rounded-full hover:bg-blue-700 transition shadow-sm">
+              লগইন / সাইন আপ
+            </Link>
           </div>
         </div>
       </header>
