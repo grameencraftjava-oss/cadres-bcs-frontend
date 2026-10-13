@@ -113,10 +113,10 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
       {/* Top Navbar */}
       <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 md:px-8 h-16 sm:h-20 flex items-center justify-between gap-2">
-          <Link href="/" className="flex items-center gap-3">
-            <img src="/logo.png" alt="CBC Logo" className="w-10 h-10 object-contain" />
-            <span className="text-sm sm:text-lg md:text-xl font-extrabold text-gray-900 truncate">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 h-16 sm:h-20 flex items-center justify-between gap-2">
+          <Link href="/" className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <img src="/logo.png" alt="CBC Logo" className="w-8 h-8 sm:w-10 sm:h-10 object-contain shrink-0" />
+            <span className="text-[13px] sm:text-lg md:text-xl font-extrabold text-gray-900 tracking-tight whitespace-nowrap">
               Cadre&apos;s BCS Compass-<span className="text-blue-600">CBC</span>
             </span>
           </Link>
