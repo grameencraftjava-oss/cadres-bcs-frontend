@@ -53,6 +53,16 @@ export default function DashboardPage() {
   const [youtubeClasses, setYoutubeClasses] = useState<PortalContent[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  // প্রোফাইল ফর্মের জন্য Controlled State (যাতে সেভ করা ডেটা সবসময় বক্সে ঠিকমতো থাকে)
+  const [profileForm, setProfileForm] = useState({
+    name: "",
+    phone: "",
+    university: "",
+    studentStatus: "",
+    statusYear: ""
+  });
 
   // Main Portal Section: "all-courses" | "suggestions" | "youtube"
   const [portalTab, setPortalTab] = useState<"all-courses" | "suggestions" | "youtube">("all-courses");
@@ -70,12 +80,21 @@ export default function DashboardPage() {
 
   const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://cadres-bcs-backend.onrender.com";
 
-  // YouTube লিংক থেকে Embed URL বের করার ফাংশন
   const getYoutubeEmbedUrl = (url: string) => {
     if (!url) return "";
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/|live\/)([^#&?]*).*/;
     const match = url.match(regExp);
     return match && match[2].length === 11 ? `https://www.youtube.com/embed/${match[2]}` : "";
+  };
+
+  const syncFormWithProfile = (p: UserProfile) => {
+    setProfileForm({
+      name: p.name || "",
+      phone: p.phone || "",
+      university: p.university || "",
+      studentStatus: p.studentStatus || "",
+      statusYear: p.statusYear || ""
+    });
   };
 
   const fetchDashboardData = async (email: string, token: string) => {
@@ -91,15 +110,27 @@ export default function DashboardPage() {
       ]);
 
       if (profileRes?.ok) {
-        const profileData = await profileRes.json();
+        const profileData: UserProfile = await profileRes.json();
         setProfile(profileData);
+        syncFormWithProfile(profileData);
         if (profileData.name) localStorage.setItem("userName", profileData.name);
-        // যদি প্রোফাইল অসম্পূর্ণ থাকে (ফোন বা ইউনিভার্সিটি না থাকে), তবে প্রোফাইল পূরণ করার পপ-আপ দেখাবে
-        if (!profileData.phone || !profileData.university || !profileData.studentStatus) {
+        localStorage.setItem("savedUserProfile_" + email, JSON.stringify(profileData));
+
+        // যদি প্রোফাইল কখনোই সেভ করা না হয়ে থাকে (অসম্পূর্ণ থাকে), তবেই শুধু প্রথমবার বক্স ওপেন হবে
+        if (!profileData.phone || !profileData.university || !profileData.studentStatus || !profileData.statusYear) {
           setActiveModal("profile");
           setIsEditingProfile(true);
         }
+      } else {
+        // ব্যাকএন্ড কানেকশন স্লো থাকলে লোকাল ব্যাকআপ থেকে লোড করবে
+        const cached = localStorage.getItem("savedUserProfile_" + email);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          setProfile(parsed);
+          syncFormWithProfile(parsed);
+        }
       }
+
       if (enrolledRes?.ok) setEnrolledCourses(await enrolledRes.json());
       if (coursesRes?.ok) setAllCourses(await coursesRes.json());
       if (suggRes?.ok) setSuggestions(await suggRes.json());
@@ -139,9 +170,17 @@ export default function DashboardPage() {
 
   const handleProfileUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const updatedData = Object.fromEntries(formData.entries());
-    updatedData.email = profile?.email || localStorage.getItem("userEmail") || "";
+    setIsSavingProfile(true);
+    const email = profile?.email || localStorage.getItem("userEmail") || "";
+
+    const updatedData = {
+      email,
+      name: profileForm.name.trim(),
+      phone: profileForm.phone.trim(),
+      university: profileForm.university.trim(),
+      studentStatus: profileForm.studentStatus,
+      statusYear: profileForm.statusYear.trim()
+    };
 
     try {
       const token = localStorage.getItem("token");
@@ -151,25 +190,32 @@ export default function DashboardPage() {
         body: JSON.stringify(updatedData)
       });
       if (res.ok) {
-        const savedUser = await res.json();
+        const savedUser: UserProfile = await res.json();
         setProfile(savedUser);
-        alert("✅ প্রোফাইল সফলভাবে সেভ হয়েছে!");
+        syncFormWithProfile(savedUser);
+        if (savedUser.name) localStorage.setItem("userName", savedUser.name);
+        localStorage.setItem("savedUserProfile_" + email, JSON.stringify(savedUser));
         setIsEditingProfile(false);
+        alert("✅ আপনার প্রোফাইল ডাটাবেসে স্থায়ীভাবে সেভ হয়েছে!");
       } else {
         alert("❌ প্রোফাইল আপডেট করা যায়নি।");
       }
     } catch (err) {
       console.error(err);
       alert("❌ সার্ভার এরর।");
+    } finally {
+      setIsSavingProfile(false);
     }
   };
 
   const handleLogout = () => {
-    localStorage.clear();
+    localStorage.removeItem("token");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("userEmail");
+    localStorage.removeItem("userName");
     router.push("/login");
   };
 
-  // হুবহু আপনার দেওয়া নির্দেশনা অনুযায়ী WhatsApp অটো-মেসেজ
   const handleWhatsAppPurchase = (courseTitle: string) => {
     const message = `আমি ${courseTitle} ব্যাচ এনরোল করতে চাই`;
     const encodedMessage = encodeURIComponent(message);
@@ -262,6 +308,8 @@ export default function DashboardPage() {
                   <div className="py-1.5">
                     <button
                       onClick={() => {
+                        if (profile) syncFormWithProfile(profile);
+                        setIsEditingProfile(false);
                         setActiveModal("profile");
                         setShowProfileMenu(false);
                       }}
@@ -371,7 +419,7 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          {/* SECTION 1: আমাদের কোর্সসমূহ (All Courses with Full Details & WhatsApp Purchase) */}
+          {/* SECTION 1: আমাদের কোর্সসমূহ */}
           {portalTab === "all-courses" && (
             <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-100">
               <h2 className="text-xl sm:text-2xl font-extrabold text-blue-900 mb-6">আমাদের কোর্সসমূহ</h2>
@@ -384,7 +432,6 @@ export default function DashboardPage() {
                   <p className="text-sm text-blue-600 mt-2">নতুন কোর্স আসলে এখানে আপডেট করা হবে। আমাদের সাথেই থাকুন!</p>
                 </div>
               ) : selectedCourse ? (
-                /* ফুল কোর্স ডিটেইলস ভিউ */
                 <div className="space-y-6">
                   <button
                     onClick={() => setSelectedCourse(null)}
@@ -440,7 +487,6 @@ export default function DashboardPage() {
                   </div>
                 </div>
               ) : (
-                /* সকল কোর্সের কার্ড লিস্ট */
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {allCourses.map((course) => (
                     <div key={course.id} className="border border-gray-200 hover:border-blue-300 bg-white p-6 rounded-2xl shadow-sm transition flex flex-col justify-between">
@@ -603,7 +649,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* MODAL FOR PROFILE / ENROLLED COURSES / PURCHASE HISTORY (Opens from Top-Right Profile Icon) */}
+      {/* MODAL FOR PROFILE / ENROLLED COURSES / PURCHASE HISTORY */}
       {activeModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 max-w-2xl w-full p-6 sm:p-8 relative my-8">
@@ -614,7 +660,7 @@ export default function DashboardPage() {
               ✕
             </button>
 
-            {/* MODAL 1: EDIT / VIEW PROFILE */}
+            {/* MODAL 1: EDIT / VIEW PROFILE (কোনো placeholder বা suggestion নেই, সেভ করা ডেটা সবসময় স্থায়ীভাবে থাকবে) */}
             {activeModal === "profile" && (
               <div>
                 <div className="flex justify-between items-center mb-6 pr-10">
@@ -623,41 +669,110 @@ export default function DashboardPage() {
                     <p className="text-xs text-blue-600 font-bold mt-0.5">Student ID: {profile?.studentId}</p>
                   </div>
                   {!isEditingProfile && (
-                    <button onClick={() => setIsEditingProfile(true)} className="text-xs sm:text-sm font-bold text-blue-600 bg-blue-50 px-4 py-2 rounded-lg hover:bg-blue-100">
-                      এডিট করুন
+                    <button
+                      onClick={() => {
+                        if (profile) syncFormWithProfile(profile);
+                        setIsEditingProfile(true);
+                      }}
+                      className="text-xs sm:text-sm font-bold text-blue-600 bg-blue-50 px-4 py-2 rounded-lg hover:bg-blue-100"
+                    >
+                      এডিট প্রোফাইল
                     </button>
                   )}
                 </div>
 
                 {isEditingProfile ? (
-                  <form onSubmit={handleProfileUpdate} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <form onSubmit={handleProfileUpdate} autoComplete="off" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-bold text-gray-700 mb-1">আপনার নাম *</label>
-                      <input type="text" name="name" defaultValue={profile?.name} className="w-full px-3.5 py-2.5 rounded-xl border outline-none focus:border-blue-500 text-sm" required />
+                      <input
+                        type="text"
+                        name="name"
+                        autoComplete="off"
+                        value={profileForm.name}
+                        onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 outline-none focus:border-blue-500 text-sm bg-white"
+                        required
+                      />
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-gray-700 mb-1">ফোন নাম্বার *</label>
-                      <input type="tel" name="phone" defaultValue={profile?.phone} className="w-full px-3.5 py-2.5 rounded-xl border outline-none focus:border-blue-500 text-sm" placeholder="017XXXXXXXX" required />
+                      <input
+                        type="tel"
+                        name="phone"
+                        autoComplete="off"
+                        value={profileForm.phone}
+                        onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 outline-none focus:border-blue-500 text-sm bg-white"
+                        required
+                      />
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-gray-700 mb-1">বিশ্ববিদ্যালয় / কলেজের নাম *</label>
-                      <input type="text" name="university" defaultValue={profile?.university} className="w-full px-3.5 py-2.5 rounded-xl border outline-none focus:border-blue-500 text-sm" placeholder="যেমন: CUET / Dhaka University" required />
+                      <input
+                        type="text"
+                        name="university"
+                        autoComplete="off"
+                        value={profileForm.university}
+                        onChange={(e) => setProfileForm({ ...profileForm, university: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 outline-none focus:border-blue-500 text-sm bg-white"
+                        required
+                      />
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-gray-700 mb-1">বর্তমান অবস্থা (Passed / Running) *</label>
-                      <select name="studentStatus" defaultValue={profile?.studentStatus || ""} className="w-full px-3.5 py-2.5 rounded-xl border outline-none focus:border-blue-500 text-sm bg-white" required>
+                      <select
+                        name="studentStatus"
+                        value={profileForm.studentStatus}
+                        onChange={(e) => setProfileForm({ ...profileForm, studentStatus: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 outline-none focus:border-blue-500 text-sm bg-white"
+                        required
+                      >
                         <option value="">নির্বাচন করুন</option>
                         <option value="RUNNING">অধ্যয়নরত (Running Student)</option>
                         <option value="PASSED">পাসকৃত (Passed)</option>
                       </select>
                     </div>
                     <div className="sm:col-span-2">
-                      <label className="block text-xs font-bold text-gray-700 mb-1">কোন বর্ষ (Running হলে) / পাসের সাল (Passed হলে) *</label>
-                      <input type="text" name="statusYear" defaultValue={profile?.statusYear} className="w-full px-3.5 py-2.5 rounded-xl border outline-none focus:border-blue-500 text-sm" placeholder="যেমন: 4th Year অথবা 2023" required />
+                      <label className="block text-xs font-bold text-gray-700 mb-1">
+                        {profileForm.studentStatus === "PASSED"
+                          ? "পাসের সাল (Passed Year) *"
+                          : profileForm.studentStatus === "RUNNING"
+                          ? "কোন বর্ষ (Running Year) *"
+                          : "কোন বর্ষ (Running হলে) / পাসের সাল (Passed হলে) *"}
+                      </label>
+                      <input
+                        type="text"
+                        name="statusYear"
+                        autoComplete="off"
+                        value={profileForm.statusYear}
+                        onChange={(e) => setProfileForm({ ...profileForm, statusYear: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-300 outline-none focus:border-blue-500 text-sm bg-white"
+                        required
+                      />
                     </div>
                     <div className="sm:col-span-2 flex justify-end gap-3 mt-2">
-                      <button type="button" onClick={() => setIsEditingProfile(false)} className="px-5 py-2.5 font-bold text-gray-600 bg-gray-100 rounded-xl text-sm">বাতিল</button>
-                      <button type="submit" className="px-6 py-2.5 font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 text-sm">সেভ করুন</button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsEditingProfile(false);
+                          if (profile?.phone && profile?.university) {
+                            // যদি আগে থেকেই সেভ করা থাকে তবে শুধু ভিউ মোডে ফিরবে
+                          } else {
+                            setActiveModal(null);
+                          }
+                        }}
+                        className="px-5 py-2.5 font-bold text-gray-600 bg-gray-100 rounded-xl text-sm"
+                      >
+                        বাতিল
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSavingProfile}
+                        className="px-6 py-2.5 font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 text-sm disabled:opacity-50"
+                      >
+                        {isSavingProfile ? "সেভ হচ্ছে..." : "সেভ করুন"}
+                      </button>
                     </div>
                   </form>
                 ) : (
