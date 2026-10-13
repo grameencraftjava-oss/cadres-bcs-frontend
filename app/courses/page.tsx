@@ -12,29 +12,29 @@ export default function CoursesPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
-      {/* Top Navbar (হোমপেজের মতো লোগো এবং লগইন/সাইন আপ বাটন) */}
+      {/* Mobile Responsive Top Navbar */}
       <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 h-20 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <img src="/logo.png" alt="CBC Logo" className="w-10 h-10 object-contain" />
-            <span className="text-xl font-extrabold text-gray-900">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 md:px-8 h-16 sm:h-20 flex items-center justify-between gap-2">
+          <Link href="/" className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <img src="/logo.png" alt="CBC Logo" className="w-8 h-8 sm:w-10 sm:h-10 object-contain shrink-0" />
+            <span className="text-sm sm:text-lg md:text-xl font-extrabold text-gray-900 truncate">
               Cadre&apos;s BCS Compass-<span className="text-blue-600">CBC</span>
             </span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-8 text-sm font-bold text-gray-700">
+          <nav className="hidden md:flex items-center gap-8 text-sm font-bold text-gray-700 shrink-0">
             <Link href="/courses" className="text-blue-600 transition">কোর্সসমূহ</Link>
             <Link href="/#about" className="hover:text-blue-600 transition">আমাদের সম্পর্কে</Link>
             <Link href="#contact" className="hover:text-blue-600 transition">যোগাযোগ</Link>
           </nav>
 
-          <div>
+          <div className="shrink-0">
             {isLoggedIn ? (
-              <Link href="/dashboard" className="bg-blue-600 text-white font-bold px-6 py-2.5 rounded-xl hover:bg-blue-700 transition shadow-sm">
+              <Link href="/dashboard" className="inline-block whitespace-nowrap bg-blue-600 text-white text-xs sm:text-sm font-bold px-3.5 py-2 sm:px-6 sm:py-2.5 rounded-xl hover:bg-blue-700 transition shadow-sm">
                 ড্যাশবোর্ড
               </Link>
             ) : (
-              <Link href="/login" className="bg-blue-600 text-white font-bold px-6 py-2.5 rounded-xl hover:bg-blue-700 transition shadow-sm">
+              <Link href="/login" className="inline-block whitespace-nowrap bg-blue-600 text-white text-xs sm:text-sm font-bold px-3.5 py-2 sm:px-6 sm:py-2.5 rounded-xl hover:bg-blue-700 transition shadow-sm">
                 লগইন / সাইন আপ
               </Link>
             )}
@@ -43,35 +43,35 @@ export default function CoursesPage() {
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-grow flex flex-col items-center justify-center p-4 py-20">
-        <div className="bg-white p-10 rounded-2xl shadow-sm border border-gray-100 text-center max-w-lg w-full">
-          <h1 className="text-3xl font-extrabold text-blue-900 mb-4">আমাদের কোর্সসমূহ</h1>
+      <div className="flex-grow flex flex-col items-center justify-center p-4 py-16 sm:py-20">
+        <div className="bg-white p-6 sm:p-10 rounded-2xl shadow-sm border border-gray-100 text-center max-w-lg w-full">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-blue-900 mb-4">আমাদের কোর্সসমূহ</h1>
           
-          <div className="bg-blue-50/50 p-8 rounded-xl border border-blue-100 mb-8">
-            <p className="text-blue-800 font-medium text-lg">
+          <div className="bg-blue-50/50 p-6 sm:p-8 rounded-xl border border-blue-100 mb-8">
+            <p className="text-blue-800 font-medium text-base sm:text-lg">
               দুঃখিত, বর্তমানে কোনো কোর্স এভেইলেবল নেই।
             </p>
-            <p className="text-sm text-blue-600 mt-2">
+            <p className="text-xs sm:text-sm text-blue-600 mt-2">
               নতুন কোর্স আসলে এখানে আপডেট করা হবে। আমাদের সাথেই থাকুন!
             </p>
           </div>
 
-          <Link href="/" className="inline-block bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition">
+          <Link href="/" className="inline-block bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition text-sm sm:text-base">
             হোম পেজে ফিরে যান
           </Link>
         </div>
       </div>
 
       {/* Footer Section with Social Icons */}
-      <footer id="contact" className="bg-slate-900 text-white py-16 mt-auto">
+      <footer id="contact" className="bg-slate-900 text-white py-12 sm:py-16 mt-auto">
         <div className="max-w-7xl mx-auto px-4 md:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 sm:gap-12 mb-12">
             <div>
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center p-1">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-full flex items-center justify-center p-1 shrink-0">
                   <img src="/logo.png" alt="CBC Logo" className="w-full h-full object-contain" />
                 </div>
-                <h3 className="text-2xl font-bold tracking-tight">Cadre&apos;s BCS <span className="text-blue-500">Compass</span></h3>
+                <h3 className="text-xl sm:text-2xl font-bold tracking-tight">Cadre&apos;s BCS <span className="text-blue-500">Compass</span></h3>
               </div>
               <p className="text-slate-400 leading-relaxed text-sm">
                 দেশের সেরা ইন্সট্রাক্টরদের গাইডলাইনে ঘরে বসেই নিন পূর্ণাঙ্গ বিসিএস প্রস্তুতি। আজই যুক্ত হোন আমাদের এক্সক্লুসিভ কোর্সে।
