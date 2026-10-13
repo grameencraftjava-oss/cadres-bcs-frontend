@@ -432,7 +432,7 @@ export default function DashboardPage() {
             </div>
             <div className="bg-blue-50 px-4 py-2.5 rounded-xl border border-blue-100 text-left sm:text-center shrink-0">
               <p className="text-[10px] text-blue-500 font-bold uppercase">Student ID</p>
-              <p className="text-base sm:text-lg font-black text-blue-800 tracking-wider">{profile?.studentId || "Generating..."}</p>
+              <p className="text-base sm:text-lg font-black text-blue-800 tracking-wider">{profile?.studentId || "Loading..."}</p>
             </div>
           </div>
 
