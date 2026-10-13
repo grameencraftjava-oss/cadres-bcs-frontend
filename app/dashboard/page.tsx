@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -8,6 +8,9 @@ interface Course {
   courseId: string;
   courseTitle: string;
   instructorName: string;
+  amountPaid?: number;
+  paymentMethod?: string;
+  trxId?: string;
   enrollmentDate: string;
 }
 
@@ -26,7 +29,15 @@ export default function DashboardPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Navigation & Dropdown States
+  const [activeView, setActiveView] = useState<"courses" | "profile" | "history">("courses");
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showNotifMenu, setShowNotifMenu] = useState(false);
+
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+  const notifMenuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://cadres-bcs-backend.onrender.com";
@@ -68,6 +79,20 @@ export default function DashboardPage() {
     fetchDashboardData(userEmail, storedToken);
   }, [router]);
 
+  // বাইরে ক্লিক করলে ড্রপডাউন বন্ধ হওয়ার লজিক
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setShowProfileMenu(false);
+      }
+      if (notifMenuRef.current && !notifMenuRef.current.contains(event.target as Node)) {
+        setShowNotifMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const handleProfileUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -99,20 +124,14 @@ export default function DashboardPage() {
     router.push("/login");
   };
 
-  const handleWhatsAppPurchase = (courseTitle: string) => {
-    const message = `আমি ${profile?.name || "একজন শিক্ষার্থী"}, আমার Student ID: ${profile?.studentId || "N/A"}. আমি "${courseTitle}" ব্যাচটি এনরোল করতে চাই।`;
-    const encodedMessage = encodeURIComponent(message);
-    window.open(`https://chat.whatsapp.com/DraE44qbMBZ3xPhWh5uEFI?s=cl&p=a&mlu=4&ilr=4?text=${encodedMessage}`, '_blank');
-  };
+  if (!mounted) return null;
 
-  if (!mounted) {
-    return null;
-  }
+  const userInitial = (profile?.name || localStorage.getItem("userName") || "S").charAt(0).toUpperCase();
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
-      {/* Top Navbar */}
-      <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
+      {/* Top Navbar with Notification & Profile Icons */}
+      <header className="bg-white/95 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 h-16 sm:h-20 flex items-center justify-between gap-2">
           <Link href="/" className="flex items-center gap-2 sm:gap-3 min-w-0">
             <img src="/logo.png" alt="CBC Logo" className="w-8 h-8 sm:w-10 sm:h-10 object-contain shrink-0" />
@@ -121,129 +140,326 @@ export default function DashboardPage() {
             </span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-8 text-sm font-bold text-gray-700">
+          <nav className="hidden md:flex items-center gap-8 text-sm font-bold text-gray-700 shrink-0">
             <Link href="/" className="hover:text-blue-600 transition">হোম</Link>
             <Link href="/courses" className="hover:text-blue-600 transition">কোর্সসমূহ</Link>
             <Link href="#contact" className="hover:text-blue-600 transition">যোগাযোগ</Link>
           </nav>
 
-          <button onClick={handleLogout} className="whitespace-nowrap shrink-0 bg-red-500 text-white text-xs sm:text-sm px-3.5 py-2 sm:px-5 sm:py-2 rounded-lg font-bold hover:bg-red-600 transition">
-            Logout
-          </button>
-        </div>
-      </header>
+          {/* Right Side Icons: Notification (Left) + Profile (Right) */}
+          <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+            
+            {/* Notification Bell Icon & Dropdown */}
+            <div className="relative" ref={notifMenuRef}>
+              <button
+                onClick={() => {
+                  setShowNotifMenu(!showNotifMenu);
+                  setShowProfileMenu(false);
+                }}
+                className="relative p-2.5 rounded-full bg-gray-50 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition border border-gray-200/80 focus:outline-none"
+                aria-label="Notifications"
+              >
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                <span className="absolute top-2 right-2.5 w-2 h-2 bg-blue-600 rounded-full"></span>
+              </button>
 
-      <div className="flex-grow p-4 md:p-8">
-        <div className="max-w-5xl mx-auto space-y-6">
-          
-          {/* Welcome & Student ID Banner */}
-          <div className="flex flex-col md:flex-row justify-between items-center bg-white p-6 rounded-xl shadow-sm border border-gray-100 gap-4">
-            <div>
-              <h1 className="text-2xl font-extrabold text-blue-900">Cadre&apos;s BCS Compass Dashboard</h1>
-              <p className="text-sm text-gray-500 font-medium mt-1">স্বাগতম, {profile?.name || "শিক্ষার্থী"}!</p>
-            </div>
-            <div className="bg-blue-50 px-5 py-2.5 rounded-xl border border-blue-100 text-center">
-              <p className="text-xs text-blue-500 font-bold uppercase">Student ID (Fixed)</p>
-              <p className="text-lg font-black text-blue-800 tracking-wider">{profile?.studentId || "Generating..."}</p>
-            </div>
-          </div>
-
-          {/* Profile Section */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-gray-800">আমার প্রোফাইল</h2>
-              {!isEditingProfile && (
-                <button onClick={() => setIsEditingProfile(true)} className="text-sm font-bold text-blue-600 bg-blue-50 px-4 py-2 rounded-lg hover:bg-blue-100 transition">
-                  এডিট প্রোফাইল
-                </button>
+              {showNotifMenu && (
+                <div className="absolute right-0 mt-3 w-72 sm:w-80 bg-white rounded-2xl shadow-xl border border-gray-100 py-3 z-50">
+                  <div className="px-4 py-2 border-b border-gray-100 flex justify-between items-center">
+                    <h3 className="font-extrabold text-gray-800 text-sm">নোটিফিকেশন</h3>
+                    <span className="text-[11px] bg-blue-50 text-blue-600 font-bold px-2 py-0.5 rounded-full">নতুন</span>
+                  </div>
+                  <div className="p-6 text-center">
+                    <p className="text-sm text-gray-500 font-medium">বর্তমানে নতুন কোনো নোটিফিকেশন নেই।</p>
+                  </div>
+                </div>
               )}
             </div>
 
-            {isEditingProfile ? (
-              <form onSubmit={handleProfileUpdate} className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-6 rounded-xl border border-gray-200">
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">আপনার নাম *</label>
-                  <input type="text" name="name" defaultValue={profile?.name} className="w-full px-4 py-2 rounded-lg border outline-none focus:border-blue-500" required />
+            {/* Profile Avatar Icon & Dropdown */}
+            <div className="relative" ref={profileMenuRef}>
+              <button
+                onClick={() => {
+                  setShowProfileMenu(!showProfileMenu);
+                  setShowNotifMenu(false);
+                }}
+                className="flex items-center gap-2 p-1 pr-2.5 rounded-full bg-blue-50/70 hover:bg-blue-100/80 border border-blue-200 transition focus:outline-none"
+                aria-label="Profile Menu"
+              >
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-blue-600 text-white font-extrabold flex items-center justify-center text-sm shadow-sm">
+                  {userInitial}
                 </div>
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">ফোন নাম্বার *</label>
-                  <input type="tel" name="phone" defaultValue={profile?.phone} className="w-full px-4 py-2 rounded-lg border outline-none focus:border-blue-500" required />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">বিশ্ববিদ্যালয় / কলেজের নাম *</label>
-                  <input type="text" name="university" defaultValue={profile?.university} className="w-full px-4 py-2 rounded-lg border outline-none focus:border-blue-500" placeholder="যেমন: ঢাকা বিশ্ববিদ্যালয়" required />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">বর্তমান অবস্থা *</label>
-                  <select name="studentStatus" defaultValue={profile?.studentStatus || ""} className="w-full px-4 py-2 rounded-lg border outline-none focus:border-blue-500" required>
-                    <option value="">নির্বাচন করুন</option>
-                    <option value="RUNNING">অধ্যয়নরত (Running Student)</option>
-                    <option value="PASSED">পাসকৃত (Passed)</option>
-                  </select>
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-bold text-gray-700 mb-1">কোন বর্ষ (Running হলে) / পাসের সাল (Passed হলে) *</label>
-                  <input type="text" name="statusYear" defaultValue={profile?.statusYear} className="w-full px-4 py-2 rounded-lg border outline-none focus:border-blue-500" placeholder="যেমন: 4th Year অথবা 2023" required />
-                </div>
-                <div className="md:col-span-2 flex justify-end gap-3 mt-2">
-                  <button type="button" onClick={() => setIsEditingProfile(false)} className="px-5 py-2 font-bold text-gray-600 bg-gray-200 rounded-lg hover:bg-gray-300">বাতিল</button>
-                  <button type="submit" className="px-5 py-2 font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700">সেভ করুন</button>
-                </div>
-              </form>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
-                  <p className="text-xs text-gray-500 font-bold mb-1">নাম ও ইমেইল</p>
-                  <p className="font-semibold text-gray-800">{profile?.name || "যোগ করা হয়নি"}</p>
-                  <p className="text-sm text-gray-600">{profile?.email || localStorage.getItem("userEmail")}</p>
-                </div>
-                <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
-                  <p className="text-xs text-gray-500 font-bold mb-1">ফোন নাম্বার</p>
-                  <p className="font-semibold text-gray-800">{profile?.phone || "যোগ করা হয়নি"}</p>
-                </div>
-                <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
-                  <p className="text-xs text-gray-500 font-bold mb-1">বিশ্ববিদ্যালয় / শিক্ষাপ্রতিষ্ঠান</p>
-                  <p className="font-semibold text-gray-800">{profile?.university || "যোগ করা হয়নি"}</p>
-                </div>
-                <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
-                  <p className="text-xs text-gray-500 font-bold mb-1">বর্তমান অবস্থা ও সাল/বর্ষ</p>
-                  <p className="font-semibold text-gray-800">
-                    {profile?.studentStatus === "RUNNING" ? "অধ্যয়নরত" : profile?.studentStatus === "PASSED" ? "পাসকৃত" : "যোগ করা হয়নি"}
-                    {profile?.statusYear ? ` (${profile.statusYear})` : ""}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
+                <svg className={`w-4 h-4 text-gray-600 transition-transform duration-200 ${showProfileMenu ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
 
-          {/* Enrolled Courses Section */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">আমার এনরোল করা কোর্সসমূহ</h2>
-            {loading ? (
-              <p className="text-gray-500 font-medium">আপনার কোর্স লোড হচ্ছে...</p>
-            ) : courses.length === 0 ? (
-              <div className="bg-blue-50/50 p-8 rounded-xl border border-blue-100 text-center">
-                <p className="text-blue-800 font-medium">বর্তমানে আপনার কোনো এনরোল করা কোর্স পাওয়া যায়নি।</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {courses.map((c) => (
-                  <div key={c.enrollmentId} className="border border-blue-100 bg-white p-5 rounded-xl shadow-sm">
-                    <h3 className="text-lg font-bold text-blue-900 mb-1">{c.courseTitle}</h3>
-                    <p className="text-sm text-gray-600 mb-4">ইন্সট্রাক্টর: {c.instructorName}</p>
-                    <button onClick={() => router.push(`/course/${c.courseId}`)} className="w-full bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700 transition">
-                      ক্লাস শুরু করুন →
+              {showProfileMenu && (
+                <div className="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 overflow-hidden">
+                  {/* User Brief Info inside Dropdown */}
+                  <div className="px-4 py-3 bg-slate-50 border-b border-gray-100">
+                    <p className="font-extrabold text-gray-900 text-sm truncate">{profile?.name || "শিক্ষার্থী"}</p>
+                    <p className="text-xs text-gray-500 truncate mb-2">{profile?.email || localStorage.getItem("userEmail")}</p>
+                    <div className="inline-flex items-center gap-1.5 bg-blue-100/80 text-blue-800 px-2.5 py-1 rounded-md text-xs font-black tracking-wider">
+                      <span>ID:</span>
+                      <span>{profile?.studentId || "Generating..."}</span>
+                    </div>
+                  </div>
+
+                  {/* Dropdown Options */}
+                  <div className="py-1.5">
+                    <button
+                      onClick={() => {
+                        setActiveView("profile");
+                        setIsEditingProfile(true);
+                        setShowProfileMenu(false);
+                      }}
+                      className={`w-full text-left px-4 py-2.5 text-sm font-bold flex items-center gap-3 transition ${activeView === "profile" ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-50"}`}
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      Edit Profile
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setActiveView("courses");
+                        setShowProfileMenu(false);
+                      }}
+                      className={`w-full text-left px-4 py-2.5 text-sm font-bold flex items-center gap-3 transition ${activeView === "courses" ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-50"}`}
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
+                      Your Enrolled Courses
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setActiveView("history");
+                        setShowProfileMenu(false);
+                      }}
+                      className={`w-full text-left px-4 py-2.5 text-sm font-bold flex items-center gap-3 transition ${activeView === "history" ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-50"}`}
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                      </svg>
+                      Course Purchase History
                     </button>
                   </div>
-                ))}
-              </div>
-            )}
+
+                  <div className="border-t border-gray-100 pt-1 mt-1">
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 flex items-center gap-3 transition"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                      </svg>
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
           </div>
+        </div>
+      </header>
+
+      {/* Main Content Area */}
+      <div className="flex-grow p-4 md:p-8">
+        <div className="max-w-5xl mx-auto space-y-6">
+          
+          {/* Top Welcome Banner */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100 gap-4">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-extrabold text-blue-900">স্বাগতম, {profile?.name || "শিক্ষার্থী"}! 👋</h1>
+              <p className="text-xs sm:text-sm text-gray-500 font-medium mt-1">উপরের ডানপাশের প্রোফাইল আইকন থেকে আপনার সব অপশন পরিচালনা করুন।</p>
+            </div>
+            <div className="bg-blue-50 px-4 py-2 rounded-xl border border-blue-100 text-left sm:text-center shrink-0">
+              <p className="text-[10px] text-blue-500 font-bold uppercase">Student ID (Fixed)</p>
+              <p className="text-base sm:text-lg font-black text-blue-800 tracking-wider">{profile?.studentId || "Generating..."}</p>
+            </div>
+          </div>
+
+          {/* Quick Switch Pills */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setActiveView("courses")}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition ${activeView === "courses" ? "bg-blue-600 text-white shadow-sm" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"}`}
+            >
+              আমার কোর্সসমূহ
+            </button>
+            <button
+              onClick={() => setActiveView("profile")}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition ${activeView === "profile" ? "bg-blue-600 text-white shadow-sm" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"}`}
+            >
+              প্রোফাইল ও এডিট
+            </button>
+            <button
+              onClick={() => setActiveView("history")}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition ${activeView === "history" ? "bg-blue-600 text-white shadow-sm" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"}`}
+            >
+              পেমেন্ট হিস্ট্রি
+            </button>
+          </div>
+
+          {/* VIEW 1: YOUR ENROLLED COURSES */}
+          {activeView === "courses" && (
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-lg sm:text-xl font-extrabold text-gray-800">আমার এনরোল করা কোর্সসমূহ</h2>
+                <Link href="/courses" className="text-xs sm:text-sm font-bold text-blue-600 hover:underline">
+                  সকল কোর্স দেখুন →
+                </Link>
+              </div>
+              {loading ? (
+                <p className="text-gray-500 font-medium">আপনার কোর্স লোড হচ্ছে...</p>
+              ) : courses.length === 0 ? (
+                <div className="bg-blue-50/50 p-8 rounded-xl border border-blue-100 text-center">
+                  <p className="text-blue-800 font-semibold">বর্তমানে আপনার কোনো এনরোল করা কোর্স পাওয়া যায়নি।</p>
+                  <Link href="/courses" className="inline-block mt-4 bg-blue-600 text-white text-xs sm:text-sm font-bold px-5 py-2.5 rounded-lg hover:bg-blue-700 transition">
+                    কোর্সসমূহ দেখুন
+                  </Link>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {courses.map((c) => (
+                    <div key={c.enrollmentId} className="border border-blue-100 bg-white p-5 rounded-xl shadow-sm">
+                      <h3 className="text-lg font-bold text-blue-900 mb-1">{c.courseTitle}</h3>
+                      <p className="text-sm text-gray-600 mb-4">ইন্সট্রাক্টর: {c.instructorName}</p>
+                      <button onClick={() => router.push(`/course/${c.courseId}`)} className="w-full bg-blue-600 text-white font-bold py-2.5 rounded-lg hover:bg-blue-700 transition">
+                        ক্লাস শুরু করুন →
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* VIEW 2: EDIT PROFILE */}
+          {activeView === "profile" && (
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-lg sm:text-xl font-extrabold text-gray-800">আমার প্রোফাইল</h2>
+                {!isEditingProfile && (
+                  <button onClick={() => setIsEditingProfile(true)} className="text-sm font-bold text-blue-600 bg-blue-50 px-4 py-2 rounded-lg hover:bg-blue-100 transition">
+                    এডিট প্রোফাইল
+                  </button>
+                )}
+              </div>
+
+              {isEditingProfile ? (
+                <form onSubmit={handleProfileUpdate} className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-6 rounded-xl border border-gray-200">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">আপনার নাম *</label>
+                    <input type="text" name="name" defaultValue={profile?.name} className="w-full px-4 py-2.5 rounded-lg border outline-none focus:border-blue-500 bg-white" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">ফোন নাম্বার *</label>
+                    <input type="tel" name="phone" defaultValue={profile?.phone} className="w-full px-4 py-2.5 rounded-lg border outline-none focus:border-blue-500 bg-white" placeholder="017XXXXXXXX" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">বিশ্ববিদ্যালয় / কলেজের নাম *</label>
+                    <input type="text" name="university" defaultValue={profile?.university} className="w-full px-4 py-2.5 rounded-lg border outline-none focus:border-blue-500 bg-white" placeholder="যেমন: ঢাকা বিশ্ববিদ্যালয়" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">বর্তমান অবস্থা *</label>
+                    <select name="studentStatus" defaultValue={profile?.studentStatus || ""} className="w-full px-4 py-2.5 rounded-lg border outline-none focus:border-blue-500 bg-white" required>
+                      <option value="">নির্বাচন করুন</option>
+                      <option value="RUNNING">অধ্যয়নরত (Running Student)</option>
+                      <option value="PASSED">পাসকৃত (Passed)</option>
+                    </select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-bold text-gray-700 mb-1">কোন বর্ষ (Running হলে) / পাসের সাল (Passed হলে) *</label>
+                    <input type="text" name="statusYear" defaultValue={profile?.statusYear} className="w-full px-4 py-2.5 rounded-lg border outline-none focus:border-blue-500 bg-white" placeholder="যেমন: 4th Year অথবা 2023" required />
+                  </div>
+                  <div className="md:col-span-2 flex justify-end gap-3 mt-2">
+                    <button type="button" onClick={() => setIsEditingProfile(false)} className="px-5 py-2.5 font-bold text-gray-600 bg-gray-200 rounded-lg hover:bg-gray-300">বাতিল</button>
+                    <button type="submit" className="px-6 py-2.5 font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700">সেভ করুন</button>
+                  </div>
+                </form>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                    <p className="text-xs text-gray-500 font-bold mb-1">নাম ও ইমেইল</p>
+                    <p className="font-bold text-gray-800">{profile?.name || "যোগ করা হয়নি"}</p>
+                    <p className="text-sm text-gray-600">{profile?.email || localStorage.getItem("userEmail")}</p>
+                  </div>
+                  <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                    <p className="text-xs text-gray-500 font-bold mb-1">ফোন নাম্বার</p>
+                    <p className="font-bold text-gray-800">{profile?.phone || "যোগ করা হয়নি"}</p>
+                  </div>
+                  <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                    <p className="text-xs text-gray-500 font-bold mb-1">বিশ্ববিদ্যালয় / শিক্ষাপ্রতিষ্ঠান</p>
+                    <p className="font-bold text-gray-800">{profile?.university || "যোগ করা হয়নি"}</p>
+                  </div>
+                  <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                    <p className="text-xs text-gray-500 font-bold mb-1">বর্তমান অবস্থা ও সাল/বর্ষ</p>
+                    <p className="font-bold text-gray-800">
+                      {profile?.studentStatus === "RUNNING" ? "অধ্যয়নরত" : profile?.studentStatus === "PASSED" ? "পাসকৃত" : "যোগ করা হয়নি"}
+                      {profile?.statusYear ? ` (${profile.statusYear})` : ""}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* VIEW 3: COURSE PURCHASE HISTORY */}
+          {activeView === "history" && (
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+              <h2 className="text-lg sm:text-xl font-extrabold text-gray-800 mb-6">কোর্স পারচেজ হিস্ট্রি</h2>
+              {courses.length === 0 ? (
+                <div className="bg-gray-50 p-8 rounded-xl border border-gray-100 text-center">
+                  <p className="text-gray-600 font-medium">আপনার কোনো পেমেন্ট বা কোর্স পারচেজ হিস্ট্রি পাওয়া যায়নি।</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50 text-slate-500 text-xs sm:text-sm border-y border-slate-200">
+                        <th className="p-3.5 font-bold">কোর্সের নাম</th>
+                        <th className="p-3.5 font-bold">পেমেন্ট মেথড ও TrxID</th>
+                        <th className="p-3.5 font-bold">পরিমাণ</th>
+                        <th className="p-3.5 font-bold">তারিখ</th>
+                        <th className="p-3.5 font-bold">স্ট্যাটাস</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {courses.map((c) => (
+                        <tr key={c.enrollmentId} className="border-b border-slate-100 text-sm">
+                          <td className="p-3.5 font-bold text-slate-800">{c.courseTitle}</td>
+                          <td className="p-3.5 text-slate-600">
+                            <span className="uppercase font-semibold">{c.paymentMethod || "Manual"}</span>
+                            {c.trxId ? <span className="block text-xs text-slate-400">TrxID: {c.trxId}</span> : null}
+                          </td>
+                          <td className="p-3.5 font-bold text-slate-800">৳ {c.amountPaid || 0}</td>
+                          <td className="p-3.5 text-slate-600">
+                            {c.enrollmentDate ? new Date(c.enrollmentDate).toLocaleDateString("bn-BD") : "N/A"}
+                          </td>
+                          <td className="p-3.5">
+                            <span className="px-2.5 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">PAID</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
 
         </div>
       </div>
 
-      {/* Footer Section with Social Icons */}
+      {/* Footer Section */}
       <footer id="contact" className="bg-slate-900 text-white pt-16 pb-8 border-t border-slate-800 scroll-mt-10 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 lg:gap-16">
