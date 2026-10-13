@@ -1,18 +1,40 @@
 "use client";
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import Link from "next/link";
+import { useEffect, useState } from "react";
+
+interface CourseItem {
+  id: number;
+  title: string;
+  courseFee: number;
+  fullInfo: string;
+  routine: string;
+  modules: string;
+  studyPlan: string;
+  mentors: string;
+}
 
 export default function CoursesPage() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [courses, setCourses] = useState<CourseItem[]>([]);
+  const [selectedCourse, setSelectedCourse] = useState<CourseItem | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://cadres-bcs-backend.onrender.com";
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    setIsLoggedIn(!!token);
-  }, []);
+    fetch(`${BACKEND_URL}/api/portal/courses`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => setCourses(data))
+      .catch(() => setCourses([]))
+      .finally(() => setLoading(false));
+  }, [BACKEND_URL]);
+
+  const handleWhatsAppPurchase = (courseTitle: string) => {
+    const message = `আমি ${courseTitle} ব্যাচ এনরোল করতে চাই`;
+    window.open(`https://wa.me/8801787017427?text=${encodeURIComponent(message)}`, "_blank");
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
-      {/* Mobile Responsive Top Navbar */}
       <header className="bg-white/95 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 h-16 sm:h-20 flex items-center justify-between gap-2">
           <Link href="/" className="flex items-center gap-2 sm:gap-3 min-w-0">
@@ -23,7 +45,7 @@ export default function CoursesPage() {
           </Link>
 
           <nav className="hidden md:flex items-center gap-8 text-sm font-bold text-gray-700 shrink-0">
-            <Link href="/courses" className="hover:text-blue-600 transition">কোর্সসমূহ</Link>
+            <Link href="/courses" className="text-blue-600 transition">কোর্সসমূহ</Link>
             <Link href="/#about" className="hover:text-blue-600 transition">আমাদের সম্পর্কে</Link>
             <Link href="#contact" className="hover:text-blue-600 transition">যোগাযোগ</Link>
           </nav>
@@ -36,27 +58,98 @@ export default function CoursesPage() {
         </div>
       </header>
 
-      {/* Main Content Area */}
-      <div className="flex-grow flex flex-col items-center justify-center p-4 py-16 sm:py-20">
-        <div className="bg-white p-6 sm:p-10 rounded-2xl shadow-sm border border-gray-100 text-center max-w-lg w-full">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-blue-900 mb-4">আমাদের কোর্সসমূহ</h1>
-          
-          <div className="bg-blue-50/50 p-6 sm:p-8 rounded-xl border border-blue-100 mb-8">
-            <p className="text-blue-800 font-medium text-base sm:text-lg">
-              দুঃখিত, বর্তমানে কোনো কোর্স এভেইলেবল নেই।
-            </p>
-            <p className="text-xs sm:text-sm text-blue-600 mt-2">
-              নতুন কোর্স আসলে এখানে আপডেট করা হবে। আমাদের সাথেই থাকুন!
-            </p>
-          </div>
+      <div className="flex-grow max-w-6xl w-full mx-auto p-4 py-12 sm:py-16">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-blue-900 text-center mb-8">আমাদের কোর্সসমূহ</h1>
 
-          <Link href="/" className="inline-block bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition text-sm sm:text-base">
-            হোম পেজে ফিরে যান
-          </Link>
-        </div>
+        {loading ? (
+          <p className="text-center text-gray-500 font-bold py-12">কোর্স লোড হচ্ছে...</p>
+        ) : courses.length === 0 ? (
+          <div className="bg-white p-6 sm:p-10 rounded-2xl shadow-sm border border-gray-100 text-center max-w-lg mx-auto">
+            <div className="bg-blue-50/50 p-6 sm:p-8 rounded-xl border border-blue-100 mb-8">
+              <p className="text-blue-800 font-medium text-base sm:text-lg">
+                দুঃখিত, বর্তমানে কোনো কোর্স এভেইলেবল নেই।
+              </p>
+              <p className="text-xs sm:text-sm text-blue-600 mt-2">
+                নতুন কোর্স আসলে এখানে আপডেট করা হবে। আমাদের সাথেই থাকুন!
+              </p>
+            </div>
+            <Link href="/" className="inline-block bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition text-sm sm:text-base">
+              হোম পেজে ফিরে যান
+            </Link>
+          </div>
+        ) : selectedCourse ? (
+          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-100 space-y-6">
+            <button onClick={() => setSelectedCourse(null)} className="text-sm font-bold text-blue-600 hover:underline">
+              ← সকল কোর্সে ফিরে যান
+            </button>
+            <div className="border border-blue-100 bg-blue-50/30 p-6 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div>
+                <h2 className="text-2xl font-black text-gray-900">{selectedCourse.title}</h2>
+                <p className="text-xl font-extrabold text-blue-600 mt-1">কোর্স ফি: ৳ {selectedCourse.courseFee}</p>
+              </div>
+              <button onClick={() => handleWhatsAppPurchase(selectedCourse.title)} className="w-full md:w-auto bg-[#25D366] hover:bg-[#20bd5a] text-white font-extrabold px-6 py-3.5 rounded-xl transition">
+                ভর্তি হোন (WhatsApp)
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {selectedCourse.fullInfo && (
+                <div className="p-5 bg-gray-50 rounded-xl border border-gray-100 md:col-span-2">
+                  <h4 className="font-extrabold text-gray-900 mb-2">📌 বিস্তারিত তথ্য</h4>
+                  <p className="text-sm text-gray-700 whitespace-pre-line">{selectedCourse.fullInfo}</p>
+                </div>
+              )}
+              {selectedCourse.routine && (
+                <div className="p-5 bg-gray-50 rounded-xl border border-gray-100">
+                  <h4 className="font-extrabold text-gray-900 mb-2">📅 ক্লাস রুটিন</h4>
+                  <p className="text-sm text-gray-700 whitespace-pre-line">{selectedCourse.routine}</p>
+                </div>
+              )}
+              {selectedCourse.modules && (
+                <div className="p-5 bg-gray-50 rounded-xl border border-gray-100">
+                  <h4 className="font-extrabold text-gray-900 mb-2">📚 কোর্স মডিউল</h4>
+                  <p className="text-sm text-gray-700 whitespace-pre-line">{selectedCourse.modules}</p>
+                </div>
+              )}
+              {selectedCourse.studyPlan && (
+                <div className="p-5 bg-gray-50 rounded-xl border border-gray-100">
+                  <h4 className="font-extrabold text-gray-900 mb-2">🎯 স্টাডি প্ল্যান</h4>
+                  <p className="text-sm text-gray-700 whitespace-pre-line">{selectedCourse.studyPlan}</p>
+                </div>
+              )}
+              {selectedCourse.mentors && (
+                <div className="p-5 bg-gray-50 rounded-xl border border-gray-100">
+                  <h4 className="font-extrabold text-gray-900 mb-2">👨‍🏫 মেন্টর প্যানেল</h4>
+                  <p className="text-sm text-gray-700 whitespace-pre-line">{selectedCourse.mentors}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {courses.map((course) => (
+              <div key={course.id} className="bg-white border border-gray-200 p-6 rounded-2xl shadow-sm flex flex-col justify-between">
+                <div>
+                  <div className="flex justify-between items-start gap-3 mb-3">
+                    <h3 className="text-xl font-extrabold text-gray-900">{course.title}</h3>
+                    <span className="bg-blue-50 text-blue-700 font-black px-3 py-1 rounded-lg text-sm shrink-0">৳ {course.courseFee}</span>
+                  </div>
+                  {course.fullInfo && <p className="text-sm text-gray-600 line-clamp-3 mb-4 whitespace-pre-line">{course.fullInfo}</p>}
+                  {course.mentors && <p className="text-xs font-bold text-slate-500 mb-4">👨‍🏫 মেন্টর: {course.mentors}</p>}
+                </div>
+                <div className="flex gap-3 pt-4 border-t border-gray-100">
+                  <button onClick={() => setSelectedCourse(course)} className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-2.5 rounded-xl text-sm transition">
+                    বিস্তারিত দেখুন
+                  </button>
+                  <button onClick={() => handleWhatsAppPurchase(course.title)} className="flex-1 bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold py-2.5 rounded-xl text-sm transition">
+                    ভর্তি হোন
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Footer Section with Social Icons */}
       <footer id="contact" className="bg-slate-900 text-white pt-16 pb-8 border-t border-slate-800 scroll-mt-10 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 lg:gap-16">

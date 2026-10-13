@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-interface Course {
+interface EnrolledCourse {
   enrollmentId: number;
   courseId: string;
   courseTitle: string;
@@ -12,6 +12,27 @@ interface Course {
   paymentMethod?: string;
   trxId?: string;
   enrollmentDate: string;
+}
+
+interface CourseItem {
+  id: number;
+  title: string;
+  courseFee: number;
+  fullInfo: string;
+  routine: string;
+  modules: string;
+  studyPlan: string;
+  mentors: string;
+}
+
+interface PortalContent {
+  id: number;
+  category: string;
+  subject: string;
+  topic: string;
+  contentText: string;
+  pdfUrl: string;
+  youtubeUrl: string;
 }
 
 interface UserProfile {
@@ -26,12 +47,19 @@ interface UserProfile {
 
 export default function DashboardPage() {
   const [mounted, setMounted] = useState(false);
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([]);
+  const [allCourses, setAllCourses] = useState<CourseItem[]>([]);
+  const [suggestions, setSuggestions] = useState<PortalContent[]>([]);
+  const [youtubeClasses, setYoutubeClasses] = useState<PortalContent[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  
-  // Navigation & Dropdown States
-  const [activeView, setActiveView] = useState<"courses" | "profile" | "history">("courses");
+
+  // Main Portal Section: "all-courses" | "suggestions" | "youtube"
+  const [portalTab, setPortalTab] = useState<"all-courses" | "suggestions" | "youtube">("all-courses");
+  const [selectedCourse, setSelectedCourse] = useState<CourseItem | null>(null);
+
+  // Profile Dropdown Modal: null | "profile" | "enrolled" | "history"
+  const [activeModal, setActiveModal] = useState<null | "profile" | "enrolled" | "history">(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
@@ -42,23 +70,40 @@ export default function DashboardPage() {
 
   const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "https://cadres-bcs-backend.onrender.com";
 
+  // YouTube লিংক থেকে Embed URL বের করার ফাংশন
+  const getYoutubeEmbedUrl = (url: string) => {
+    if (!url) return "";
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/|live\/)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return match && match[2].length === 11 ? `https://www.youtube.com/embed/${match[2]}` : "";
+  };
+
   const fetchDashboardData = async (email: string, token: string) => {
     try {
-      const profileRes = await fetch(`${BACKEND_URL}/api/profile/${email}`, {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      if (profileRes.ok) {
+      const headers = { "Authorization": `Bearer ${token}` };
+
+      const [profileRes, enrolledRes, coursesRes, suggRes, ytRes] = await Promise.all([
+        fetch(`${BACKEND_URL}/api/profile/${email}`, { headers }).catch(() => null),
+        fetch(`${BACKEND_URL}/api/enrollments/dashboard/${email}`, { headers }).catch(() => null),
+        fetch(`${BACKEND_URL}/api/portal/courses`).catch(() => null),
+        fetch(`${BACKEND_URL}/api/portal/suggestions`).catch(() => null),
+        fetch(`${BACKEND_URL}/api/portal/youtube-classes`).catch(() => null),
+      ]);
+
+      if (profileRes?.ok) {
         const profileData = await profileRes.json();
         setProfile(profileData);
         if (profileData.name) localStorage.setItem("userName", profileData.name);
+        // যদি প্রোফাইল অসম্পূর্ণ থাকে (ফোন বা ইউনিভার্সিটি না থাকে), তবে প্রোফাইল পূরণ করার পপ-আপ দেখাবে
+        if (!profileData.phone || !profileData.university || !profileData.studentStatus) {
+          setActiveModal("profile");
+          setIsEditingProfile(true);
+        }
       }
-
-      const coursesRes = await fetch(`${BACKEND_URL}/api/enrollments/dashboard/${email}`, {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      if (coursesRes.ok) {
-        setCourses(await coursesRes.json());
-      }
+      if (enrolledRes?.ok) setEnrolledCourses(await enrolledRes.json());
+      if (coursesRes?.ok) setAllCourses(await coursesRes.json());
+      if (suggRes?.ok) setSuggestions(await suggRes.json());
+      if (ytRes?.ok) setYoutubeClasses(await ytRes.json());
     } catch (err) {
       console.error("Dashboard fetch error:", err);
     } finally {
@@ -79,7 +124,6 @@ export default function DashboardPage() {
     fetchDashboardData(userEmail, storedToken);
   }, [router]);
 
-  // বাইরে ক্লিক করলে ড্রপডাউন বন্ধ হওয়ার লজিক
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
@@ -107,9 +151,10 @@ export default function DashboardPage() {
         body: JSON.stringify(updatedData)
       });
       if (res.ok) {
-        alert("✅ প্রোফাইল সফলভাবে আপডেট হয়েছে!");
+        const savedUser = await res.json();
+        setProfile(savedUser);
+        alert("✅ প্রোফাইল সফলভাবে সেভ হয়েছে!");
         setIsEditingProfile(false);
-        fetchDashboardData(updatedData.email as string, token || "");
       } else {
         alert("❌ প্রোফাইল আপডেট করা যায়নি।");
       }
@@ -124,13 +169,20 @@ export default function DashboardPage() {
     router.push("/login");
   };
 
+  // হুবহু আপনার দেওয়া নির্দেশনা অনুযায়ী WhatsApp অটো-মেসেজ
+  const handleWhatsAppPurchase = (courseTitle: string) => {
+    const message = `আমি ${courseTitle} ব্যাচ এনরোল করতে চাই`;
+    const encodedMessage = encodeURIComponent(message);
+    window.open(`https://wa.me/8801787017427?text=${encodedMessage}`, "_blank");
+  };
+
   if (!mounted) return null;
 
   const userInitial = (profile?.name || localStorage.getItem("userName") || "S").charAt(0).toUpperCase();
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
-      {/* Top Navbar with Notification & Profile Icons */}
+      {/* Top Navbar */}
       <header className="bg-white/95 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 h-16 sm:h-20 flex items-center justify-between gap-2">
           <Link href="/" className="flex items-center gap-2 sm:gap-3 min-w-0">
@@ -146,10 +198,10 @@ export default function DashboardPage() {
             <Link href="#contact" className="hover:text-blue-600 transition">যোগাযোগ</Link>
           </nav>
 
-          {/* Right Side Icons: Notification (Left) + Profile (Right) */}
+          {/* Right Side: Notification Icon (Left) + Profile Icon (Right) */}
           <div className="flex items-center gap-3 sm:gap-4 shrink-0">
             
-            {/* Notification Bell Icon & Dropdown */}
+            {/* Notification Bell */}
             <div className="relative" ref={notifMenuRef}>
               <button
                 onClick={() => {
@@ -178,7 +230,7 @@ export default function DashboardPage() {
               )}
             </div>
 
-            {/* Profile Avatar Icon & Dropdown */}
+            {/* Profile Dropdown */}
             <div className="relative" ref={profileMenuRef}>
               <button
                 onClick={() => {
@@ -198,25 +250,22 @@ export default function DashboardPage() {
 
               {showProfileMenu && (
                 <div className="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 overflow-hidden">
-                  {/* User Brief Info inside Dropdown */}
                   <div className="px-4 py-3 bg-slate-50 border-b border-gray-100">
                     <p className="font-extrabold text-gray-900 text-sm truncate">{profile?.name || "শিক্ষার্থী"}</p>
                     <p className="text-xs text-gray-500 truncate mb-2">{profile?.email || localStorage.getItem("userEmail")}</p>
                     <div className="inline-flex items-center gap-1.5 bg-blue-100/80 text-blue-800 px-2.5 py-1 rounded-md text-xs font-black tracking-wider">
-                      <span>ID:</span>
+                      <span>Student ID:</span>
                       <span>{profile?.studentId || "Generating..."}</span>
                     </div>
                   </div>
 
-                  {/* Dropdown Options */}
                   <div className="py-1.5">
                     <button
                       onClick={() => {
-                        setActiveView("profile");
-                        setIsEditingProfile(true);
+                        setActiveModal("profile");
                         setShowProfileMenu(false);
                       }}
-                      className={`w-full text-left px-4 py-2.5 text-sm font-bold flex items-center gap-3 transition ${activeView === "profile" ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-50"}`}
+                      className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-3 transition"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -226,10 +275,10 @@ export default function DashboardPage() {
 
                     <button
                       onClick={() => {
-                        setActiveView("courses");
+                        setActiveModal("enrolled");
                         setShowProfileMenu(false);
                       }}
-                      className={`w-full text-left px-4 py-2.5 text-sm font-bold flex items-center gap-3 transition ${activeView === "courses" ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-50"}`}
+                      className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-3 transition"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -239,10 +288,10 @@ export default function DashboardPage() {
 
                     <button
                       onClick={() => {
-                        setActiveView("history");
+                        setActiveModal("history");
                         setShowProfileMenu(false);
                       }}
-                      className={`w-full text-left px-4 py-2.5 text-sm font-bold flex items-center gap-3 transition ${activeView === "history" ? "bg-blue-50 text-blue-600" : "text-gray-700 hover:bg-gray-50"}`}
+                      className="w-full text-left px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-blue-50 hover:text-blue-600 flex items-center gap-3 transition"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
@@ -270,71 +319,160 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* Main Content Area */}
+      {/* Main Student Portal Body */}
       <div className="flex-grow p-4 md:p-8">
-        <div className="max-w-5xl mx-auto space-y-6">
+        <div className="max-w-6xl mx-auto space-y-6">
           
-          {/* Top Welcome Banner */}
+          {/* ১. উপরের স্বাগতম ও ফিক্সড স্টুডেন্ট আইডি কার্ড */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100 gap-4">
             <div>
               <h1 className="text-xl sm:text-2xl font-extrabold text-blue-900">স্বাগতম, {profile?.name || "শিক্ষার্থী"}! 👋</h1>
-              <p className="text-xs sm:text-sm text-gray-500 font-medium mt-1">উপরের ডানপাশের প্রোফাইল আইকন থেকে আপনার সব অপশন পরিচালনা করুন।</p>
+              <p className="text-xs sm:text-sm text-gray-500 font-medium mt-1">আপনার বিসিএস প্রস্তুতির সকল কোর্স, ফ্রি সাজেশন এবং ক্লাস নিচে সাজানো রয়েছে।</p>
             </div>
-            <div className="bg-blue-50 px-4 py-2 rounded-xl border border-blue-100 text-left sm:text-center shrink-0">
+            <div className="bg-blue-50 px-4 py-2.5 rounded-xl border border-blue-100 text-left sm:text-center shrink-0">
               <p className="text-[10px] text-blue-500 font-bold uppercase">Student ID (Fixed)</p>
               <p className="text-base sm:text-lg font-black text-blue-800 tracking-wider">{profile?.studentId || "Generating..."}</p>
             </div>
           </div>
 
-          {/* Quick Switch Pills */}
-          <div className="flex flex-wrap gap-2">
+          {/* ২. মেইন পোর্টাল মেনু: আমাদের কোর্সসমূহ | Free Suggestions | Our YouTube Class */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <button
-              onClick={() => setActiveView("courses")}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition ${activeView === "courses" ? "bg-blue-600 text-white shadow-sm" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"}`}
+              onClick={() => { setPortalTab("all-courses"); setSelectedCourse(null); }}
+              className={`p-4 rounded-2xl font-extrabold text-sm sm:text-base flex items-center justify-center gap-2.5 transition border ${
+                portalTab === "all-courses"
+                  ? "bg-blue-600 text-white border-blue-600 shadow-md"
+                  : "bg-white text-gray-800 border-gray-100 hover:bg-blue-50/50"
+              }`}
             >
-              আমার কোর্সসমূহ
+              <span>📚</span> আমাদের কোর্সসমূহ
             </button>
+
             <button
-              onClick={() => setActiveView("profile")}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition ${activeView === "profile" ? "bg-blue-600 text-white shadow-sm" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"}`}
+              onClick={() => setPortalTab("suggestions")}
+              className={`p-4 rounded-2xl font-extrabold text-sm sm:text-base flex items-center justify-center gap-2.5 transition border ${
+                portalTab === "suggestions"
+                  ? "bg-blue-600 text-white border-blue-600 shadow-md"
+                  : "bg-white text-gray-800 border-gray-100 hover:bg-blue-50/50"
+              }`}
             >
-              প্রোফাইল ও এডিট
+              <span>📝</span> Free Suggestions
             </button>
+
             <button
-              onClick={() => setActiveView("history")}
-              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition ${activeView === "history" ? "bg-blue-600 text-white shadow-sm" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"}`}
+              onClick={() => setPortalTab("youtube")}
+              className={`p-4 rounded-2xl font-extrabold text-sm sm:text-base flex items-center justify-center gap-2.5 transition border ${
+                portalTab === "youtube"
+                  ? "bg-blue-600 text-white border-blue-600 shadow-md"
+                  : "bg-white text-gray-800 border-gray-100 hover:bg-blue-50/50"
+              }`}
             >
-              পেমেন্ট হিস্ট্রি
+              <span>▶️</span> Our YouTube Class
             </button>
           </div>
 
-          {/* VIEW 1: YOUR ENROLLED COURSES */}
-          {activeView === "courses" && (
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg sm:text-xl font-extrabold text-gray-800">আমার এনরোল করা কোর্সসমূহ</h2>
-                <Link href="/courses" className="text-xs sm:text-sm font-bold text-blue-600 hover:underline">
-                  সকল কোর্স দেখুন →
-                </Link>
-              </div>
+          {/* SECTION 1: আমাদের কোর্সসমূহ (All Courses with Full Details & WhatsApp Purchase) */}
+          {portalTab === "all-courses" && (
+            <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-100">
+              <h2 className="text-xl sm:text-2xl font-extrabold text-blue-900 mb-6">আমাদের কোর্সসমূহ</h2>
+
               {loading ? (
-                <p className="text-gray-500 font-medium">আপনার কোর্স লোড হচ্ছে...</p>
-              ) : courses.length === 0 ? (
-                <div className="bg-blue-50/50 p-8 rounded-xl border border-blue-100 text-center">
-                  <p className="text-blue-800 font-semibold">বর্তমানে আপনার কোনো এনরোল করা কোর্স পাওয়া যায়নি।</p>
-                  <Link href="/courses" className="inline-block mt-4 bg-blue-600 text-white text-xs sm:text-sm font-bold px-5 py-2.5 rounded-lg hover:bg-blue-700 transition">
-                    কোর্সসমূহ দেখুন
-                  </Link>
+                <p className="text-gray-500 font-medium text-center py-8">কোর্স লোড হচ্ছে...</p>
+              ) : allCourses.length === 0 ? (
+                <div className="bg-blue-50/50 p-10 rounded-xl border border-blue-100 text-center">
+                  <p className="text-blue-800 font-bold text-lg">দুঃখিত, বর্তমানে কোনো কোর্স এভেইলেবল নেই।</p>
+                  <p className="text-sm text-blue-600 mt-2">নতুন কোর্স আসলে এখানে আপডেট করা হবে। আমাদের সাথেই থাকুন!</p>
+                </div>
+              ) : selectedCourse ? (
+                /* ফুল কোর্স ডিটেইলস ভিউ */
+                <div className="space-y-6">
+                  <button
+                    onClick={() => setSelectedCourse(null)}
+                    className="inline-flex items-center gap-1.5 text-sm font-bold text-blue-600 hover:underline"
+                  >
+                    ← সকল কোর্সে ফিরে যান
+                  </button>
+
+                  <div className="border border-blue-100 bg-blue-50/30 p-6 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                      <h3 className="text-2xl font-black text-gray-900">{selectedCourse.title}</h3>
+                      <p className="text-xl font-extrabold text-blue-600 mt-1">কোর্স ফি: ৳ {selectedCourse.courseFee}</p>
+                    </div>
+                    <button
+                      onClick={() => handleWhatsAppPurchase(selectedCourse.title)}
+                      className="w-full md:w-auto bg-[#25D366] hover:bg-[#20bd5a] text-white font-extrabold px-6 py-3.5 rounded-xl flex items-center justify-center gap-2 transition shadow-sm"
+                    >
+                      <span>ভর্তি হোন (WhatsApp)</span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {selectedCourse.fullInfo && (
+                      <div className="p-5 bg-gray-50 rounded-xl border border-gray-100 md:col-span-2">
+                        <h4 className="font-extrabold text-gray-900 mb-2 text-base">📌 কোর্সের বিস্তারিত তথ্য (Full Info)</h4>
+                        <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{selectedCourse.fullInfo}</p>
+                      </div>
+                    )}
+                    {selectedCourse.routine && (
+                      <div className="p-5 bg-gray-50 rounded-xl border border-gray-100">
+                        <h4 className="font-extrabold text-gray-900 mb-2 text-base">📅 ক্লাস রুটিন (Routine)</h4>
+                        <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{selectedCourse.routine}</p>
+                      </div>
+                    )}
+                    {selectedCourse.modules && (
+                      <div className="p-5 bg-gray-50 rounded-xl border border-gray-100">
+                        <h4 className="font-extrabold text-gray-900 mb-2 text-base">📚 কোর্স মডিউল (Modules)</h4>
+                        <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{selectedCourse.modules}</p>
+                      </div>
+                    )}
+                    {selectedCourse.studyPlan && (
+                      <div className="p-5 bg-gray-50 rounded-xl border border-gray-100">
+                        <h4 className="font-extrabold text-gray-900 mb-2 text-base">🎯 স্টাডি প্ল্যান (Study Plan)</h4>
+                        <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{selectedCourse.studyPlan}</p>
+                      </div>
+                    )}
+                    {selectedCourse.mentors && (
+                      <div className="p-5 bg-gray-50 rounded-xl border border-gray-100">
+                        <h4 className="font-extrabold text-gray-900 mb-2 text-base">👨‍🏫 মেন্টর প্যানেল (Mentors)</h4>
+                        <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{selectedCourse.mentors}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {courses.map((c) => (
-                    <div key={c.enrollmentId} className="border border-blue-100 bg-white p-5 rounded-xl shadow-sm">
-                      <h3 className="text-lg font-bold text-blue-900 mb-1">{c.courseTitle}</h3>
-                      <p className="text-sm text-gray-600 mb-4">ইন্সট্রাক্টর: {c.instructorName}</p>
-                      <button onClick={() => router.push(`/course/${c.courseId}`)} className="w-full bg-blue-600 text-white font-bold py-2.5 rounded-lg hover:bg-blue-700 transition">
-                        ক্লাস শুরু করুন →
-                      </button>
+                /* সকল কোর্সের কার্ড লিস্ট */
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {allCourses.map((course) => (
+                    <div key={course.id} className="border border-gray-200 hover:border-blue-300 bg-white p-6 rounded-2xl shadow-sm transition flex flex-col justify-between">
+                      <div>
+                        <div className="flex justify-between items-start gap-3 mb-3">
+                          <h3 className="text-xl font-extrabold text-gray-900">{course.title}</h3>
+                          <span className="bg-blue-50 text-blue-700 font-black px-3 py-1 rounded-lg text-sm shrink-0">
+                            ৳ {course.courseFee}
+                          </span>
+                        </div>
+                        {course.fullInfo && (
+                          <p className="text-sm text-gray-600 line-clamp-3 mb-4 whitespace-pre-line">{course.fullInfo}</p>
+                        )}
+                        {course.mentors && (
+                          <p className="text-xs font-bold text-slate-500 mb-4">👨‍🏫 মেন্টর: {course.mentors}</p>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-100 mt-2">
+                        <button
+                          onClick={() => setSelectedCourse(course)}
+                          className="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-2.5 px-4 rounded-xl text-sm transition"
+                        >
+                          বিস্তারিত দেখুন
+                        </button>
+                        <button
+                          onClick={() => handleWhatsAppPurchase(course.title)}
+                          className="flex-1 bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold py-2.5 px-4 rounded-xl text-sm transition"
+                        >
+                          ভর্তি হোন (Purchase)
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -342,115 +480,121 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* VIEW 2: EDIT PROFILE */}
-          {activeView === "profile" && (
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg sm:text-xl font-extrabold text-gray-800">আমার প্রোফাইল</h2>
-                {!isEditingProfile && (
-                  <button onClick={() => setIsEditingProfile(true)} className="text-sm font-bold text-blue-600 bg-blue-50 px-4 py-2 rounded-lg hover:bg-blue-100 transition">
-                    এডিট প্রোফাইল
-                  </button>
-                )}
-              </div>
-
-              {isEditingProfile ? (
-                <form onSubmit={handleProfileUpdate} className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-6 rounded-xl border border-gray-200">
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1">আপনার নাম *</label>
-                    <input type="text" name="name" defaultValue={profile?.name} className="w-full px-4 py-2.5 rounded-lg border outline-none focus:border-blue-500 bg-white" required />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1">ফোন নাম্বার *</label>
-                    <input type="tel" name="phone" defaultValue={profile?.phone} className="w-full px-4 py-2.5 rounded-lg border outline-none focus:border-blue-500 bg-white" placeholder="017XXXXXXXX" required />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1">বিশ্ববিদ্যালয় / কলেজের নাম *</label>
-                    <input type="text" name="university" defaultValue={profile?.university} className="w-full px-4 py-2.5 rounded-lg border outline-none focus:border-blue-500 bg-white" placeholder="যেমন: ঢাকা বিশ্ববিদ্যালয়" required />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1">বর্তমান অবস্থা *</label>
-                    <select name="studentStatus" defaultValue={profile?.studentStatus || ""} className="w-full px-4 py-2.5 rounded-lg border outline-none focus:border-blue-500 bg-white" required>
-                      <option value="">নির্বাচন করুন</option>
-                      <option value="RUNNING">অধ্যয়নরত (Running Student)</option>
-                      <option value="PASSED">পাসকৃত (Passed)</option>
-                    </select>
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-bold text-gray-700 mb-1">কোন বর্ষ (Running হলে) / পাসের সাল (Passed হলে) *</label>
-                    <input type="text" name="statusYear" defaultValue={profile?.statusYear} className="w-full px-4 py-2.5 rounded-lg border outline-none focus:border-blue-500 bg-white" placeholder="যেমন: 4th Year অথবা 2023" required />
-                  </div>
-                  <div className="md:col-span-2 flex justify-end gap-3 mt-2">
-                    <button type="button" onClick={() => setIsEditingProfile(false)} className="px-5 py-2.5 font-bold text-gray-600 bg-gray-200 rounded-lg hover:bg-gray-300">বাতিল</button>
-                    <button type="submit" className="px-6 py-2.5 font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700">সেভ করুন</button>
-                  </div>
-                </form>
+          {/* SECTION 2: Free Suggestions */}
+          {portalTab === "suggestions" && (
+            <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-100">
+              <h2 className="text-xl sm:text-2xl font-extrabold text-blue-900 mb-6">Free Suggestions</h2>
+              {suggestions.length === 0 ? (
+                <div className="bg-blue-50/50 p-10 rounded-xl border border-blue-100 text-center">
+                  <p className="text-blue-800 font-bold text-lg">বর্তমানে কোনো ফ্রি সাজেশন এভেইলেবল নেই।</p>
+                  <p className="text-sm text-blue-600 mt-1">অ্যাডমিন নতুন সাজেশন যুক্ত করলে এখানে দেখতে পাবেন।</p>
+                </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                    <p className="text-xs text-gray-500 font-bold mb-1">নাম ও ইমেইল</p>
-                    <p className="font-bold text-gray-800">{profile?.name || "যোগ করা হয়নি"}</p>
-                    <p className="text-sm text-gray-600">{profile?.email || localStorage.getItem("userEmail")}</p>
-                  </div>
-                  <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                    <p className="text-xs text-gray-500 font-bold mb-1">ফোন নাম্বার</p>
-                    <p className="font-bold text-gray-800">{profile?.phone || "যোগ করা হয়নি"}</p>
-                  </div>
-                  <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                    <p className="text-xs text-gray-500 font-bold mb-1">বিশ্ববিদ্যালয় / শিক্ষাপ্রতিষ্ঠান</p>
-                    <p className="font-bold text-gray-800">{profile?.university || "যোগ করা হয়নি"}</p>
-                  </div>
-                  <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                    <p className="text-xs text-gray-500 font-bold mb-1">বর্তমান অবস্থা ও সাল/বর্ষ</p>
-                    <p className="font-bold text-gray-800">
-                      {profile?.studentStatus === "RUNNING" ? "অধ্যয়নরত" : profile?.studentStatus === "PASSED" ? "পাসকৃত" : "যোগ করা হয়নি"}
-                      {profile?.statusYear ? ` (${profile.statusYear})` : ""}
-                    </p>
-                  </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {suggestions.map((item) => {
+                    const embedUrl = getYoutubeEmbedUrl(item.youtubeUrl);
+                    return (
+                      <div key={item.id} className="border border-gray-200 rounded-2xl p-5 bg-gray-50/50 space-y-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-extrabold rounded-full">
+                            {item.subject}
+                          </span>
+                        </div>
+                        <h3 className="text-lg font-extrabold text-gray-900">{item.topic}</h3>
+                        {item.contentText && (
+                          <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed bg-white p-4 rounded-xl border border-gray-100">
+                            {item.contentText}
+                          </p>
+                        )}
+                        {embedUrl && (
+                          <div className="aspect-video w-full rounded-xl overflow-hidden border border-gray-200">
+                            <iframe src={embedUrl} className="w-full h-full" allowFullScreen title={item.topic} />
+                          </div>
+                        )}
+                        <div className="flex flex-wrap gap-3 pt-2">
+                          {item.pdfUrl && (
+                            <a
+                              href={item.pdfUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl transition"
+                            >
+                              📄 PDF ডাউনলোড / দেখুন
+                            </a>
+                          )}
+                          {item.youtubeUrl && !embedUrl && (
+                            <a
+                              href={item.youtubeUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 bg-red-50 text-red-600 border border-red-200 text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl transition"
+                            >
+                              ▶️ YouTube ভিডিও দেখুন
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
           )}
 
-          {/* VIEW 3: COURSE PURCHASE HISTORY */}
-          {activeView === "history" && (
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-              <h2 className="text-lg sm:text-xl font-extrabold text-gray-800 mb-6">কোর্স পারচেজ হিস্ট্রি</h2>
-              {courses.length === 0 ? (
-                <div className="bg-gray-50 p-8 rounded-xl border border-gray-100 text-center">
-                  <p className="text-gray-600 font-medium">আপনার কোনো পেমেন্ট বা কোর্স পারচেজ হিস্ট্রি পাওয়া যায়নি।</p>
+          {/* SECTION 3: Our YouTube Class */}
+          {portalTab === "youtube" && (
+            <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-100">
+              <h2 className="text-xl sm:text-2xl font-extrabold text-blue-900 mb-6">Our YouTube Class</h2>
+              {youtubeClasses.length === 0 ? (
+                <div className="bg-blue-50/50 p-10 rounded-xl border border-blue-100 text-center">
+                  <p className="text-blue-800 font-bold text-lg">বর্তমানে কোনো ইউটিউব ক্লাস এভেইলেবল নেই।</p>
+                  <p className="text-sm text-blue-600 mt-1">অ্যাডমিন নতুন ক্লাস যুক্ত করলে এখানে দেখতে পাবেন।</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-slate-50 text-slate-500 text-xs sm:text-sm border-y border-slate-200">
-                        <th className="p-3.5 font-bold">কোর্সের নাম</th>
-                        <th className="p-3.5 font-bold">পেমেন্ট মেথড ও TrxID</th>
-                        <th className="p-3.5 font-bold">পরিমাণ</th>
-                        <th className="p-3.5 font-bold">তারিখ</th>
-                        <th className="p-3.5 font-bold">স্ট্যাটাস</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {courses.map((c) => (
-                        <tr key={c.enrollmentId} className="border-b border-slate-100 text-sm">
-                          <td className="p-3.5 font-bold text-slate-800">{c.courseTitle}</td>
-                          <td className="p-3.5 text-slate-600">
-                            <span className="uppercase font-semibold">{c.paymentMethod || "Manual"}</span>
-                            {c.trxId ? <span className="block text-xs text-slate-400">TrxID: {c.trxId}</span> : null}
-                          </td>
-                          <td className="p-3.5 font-bold text-slate-800">৳ {c.amountPaid || 0}</td>
-                          <td className="p-3.5 text-slate-600">
-                            {c.enrollmentDate ? new Date(c.enrollmentDate).toLocaleDateString("bn-BD") : "N/A"}
-                          </td>
-                          <td className="p-3.5">
-                            <span className="px-2.5 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">PAID</span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {youtubeClasses.map((item) => {
+                    const embedUrl = getYoutubeEmbedUrl(item.youtubeUrl);
+                    return (
+                      <div key={item.id} className="border border-gray-200 rounded-2xl p-5 bg-gray-50/50 space-y-3">
+                        <span className="px-3 py-1 bg-purple-100 text-purple-800 text-xs font-extrabold rounded-full inline-block">
+                          {item.subject}
+                        </span>
+                        <h3 className="text-lg font-extrabold text-gray-900">{item.topic}</h3>
+                        {item.contentText && (
+                          <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed bg-white p-4 rounded-xl border border-gray-100">
+                            {item.contentText}
+                          </p>
+                        )}
+                        {embedUrl && (
+                          <div className="aspect-video w-full rounded-xl overflow-hidden border border-gray-200">
+                            <iframe src={embedUrl} className="w-full h-full" allowFullScreen title={item.topic} />
+                          </div>
+                        )}
+                        <div className="flex flex-wrap gap-3 pt-2">
+                          {item.pdfUrl && (
+                            <a
+                              href={item.pdfUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl transition"
+                            >
+                              📄 ক্লাস নোট (PDF)
+                            </a>
+                          )}
+                          {item.youtubeUrl && !embedUrl && (
+                            <a
+                              href={item.youtubeUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 bg-red-50 text-red-600 border border-red-200 text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl transition"
+                            >
+                              ▶️ YouTube এ ক্লাস দেখুন
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -458,6 +602,157 @@ export default function DashboardPage() {
 
         </div>
       </div>
+
+      {/* MODAL FOR PROFILE / ENROLLED COURSES / PURCHASE HISTORY (Opens from Top-Right Profile Icon) */}
+      {activeModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 max-w-2xl w-full p-6 sm:p-8 relative my-8">
+            <button
+              onClick={() => { setActiveModal(null); setIsEditingProfile(false); }}
+              className="absolute top-5 right-5 w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 font-bold"
+            >
+              ✕
+            </button>
+
+            {/* MODAL 1: EDIT / VIEW PROFILE */}
+            {activeModal === "profile" && (
+              <div>
+                <div className="flex justify-between items-center mb-6 pr-10">
+                  <div>
+                    <h2 className="text-xl font-extrabold text-gray-900">আমার প্রোফাইল</h2>
+                    <p className="text-xs text-blue-600 font-bold mt-0.5">Student ID: {profile?.studentId}</p>
+                  </div>
+                  {!isEditingProfile && (
+                    <button onClick={() => setIsEditingProfile(true)} className="text-xs sm:text-sm font-bold text-blue-600 bg-blue-50 px-4 py-2 rounded-lg hover:bg-blue-100">
+                      এডিট করুন
+                    </button>
+                  )}
+                </div>
+
+                {isEditingProfile ? (
+                  <form onSubmit={handleProfileUpdate} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">আপনার নাম *</label>
+                      <input type="text" name="name" defaultValue={profile?.name} className="w-full px-3.5 py-2.5 rounded-xl border outline-none focus:border-blue-500 text-sm" required />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">ফোন নাম্বার *</label>
+                      <input type="tel" name="phone" defaultValue={profile?.phone} className="w-full px-3.5 py-2.5 rounded-xl border outline-none focus:border-blue-500 text-sm" placeholder="017XXXXXXXX" required />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">বিশ্ববিদ্যালয় / কলেজের নাম *</label>
+                      <input type="text" name="university" defaultValue={profile?.university} className="w-full px-3.5 py-2.5 rounded-xl border outline-none focus:border-blue-500 text-sm" placeholder="যেমন: CUET / Dhaka University" required />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">বর্তমান অবস্থা (Passed / Running) *</label>
+                      <select name="studentStatus" defaultValue={profile?.studentStatus || ""} className="w-full px-3.5 py-2.5 rounded-xl border outline-none focus:border-blue-500 text-sm bg-white" required>
+                        <option value="">নির্বাচন করুন</option>
+                        <option value="RUNNING">অধ্যয়নরত (Running Student)</option>
+                        <option value="PASSED">পাসকৃত (Passed)</option>
+                      </select>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-bold text-gray-700 mb-1">কোন বর্ষ (Running হলে) / পাসের সাল (Passed হলে) *</label>
+                      <input type="text" name="statusYear" defaultValue={profile?.statusYear} className="w-full px-3.5 py-2.5 rounded-xl border outline-none focus:border-blue-500 text-sm" placeholder="যেমন: 4th Year অথবা 2023" required />
+                    </div>
+                    <div className="sm:col-span-2 flex justify-end gap-3 mt-2">
+                      <button type="button" onClick={() => setIsEditingProfile(false)} className="px-5 py-2.5 font-bold text-gray-600 bg-gray-100 rounded-xl text-sm">বাতিল</button>
+                      <button type="submit" className="px-6 py-2.5 font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 text-sm">সেভ করুন</button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                      <p className="text-xs text-gray-500 font-bold mb-1">নাম ও ইমেইল</p>
+                      <p className="font-bold text-gray-800">{profile?.name || "N/A"}</p>
+                      <p className="text-xs text-gray-600">{profile?.email}</p>
+                    </div>
+                    <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                      <p className="text-xs text-gray-500 font-bold mb-1">ফোন নাম্বার</p>
+                      <p className="font-bold text-gray-800">{profile?.phone || "যোগ করা হয়নি"}</p>
+                    </div>
+                    <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                      <p className="text-xs text-gray-500 font-bold mb-1">বিশ্ববিদ্যালয় / শিক্ষাপ্রতিষ্ঠান</p>
+                      <p className="font-bold text-gray-800">{profile?.university || "যোগ করা হয়নি"}</p>
+                    </div>
+                    <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                      <p className="text-xs text-gray-500 font-bold mb-1">বর্তমান অবস্থা ও বর্ষ/সাল</p>
+                      <p className="font-bold text-gray-800">
+                        {profile?.studentStatus === "RUNNING" ? "অধ্যয়নরত" : profile?.studentStatus === "PASSED" ? "পাসকৃত" : "যোগ করা হয়নি"}
+                        {profile?.statusYear ? ` (${profile.statusYear})` : ""}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* MODAL 2: YOUR ENROLLED COURSES */}
+            {activeModal === "enrolled" && (
+              <div>
+                <h2 className="text-xl font-extrabold text-gray-900 mb-6 pr-10">আমার এনরোল করা কোর্সসমূহ</h2>
+                {enrolledCourses.length === 0 ? (
+                  <div className="bg-blue-50/50 p-8 rounded-xl border border-blue-100 text-center">
+                    <p className="text-blue-800 font-semibold">বর্তমানে আপনার কোনো এনরোল করা কোর্স পাওয়া যায়নি।</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {enrolledCourses.map((c) => (
+                      <div key={c.enrollmentId} className="border border-blue-100 bg-blue-50/20 p-4 rounded-xl flex justify-between items-center gap-4">
+                        <div>
+                          <h3 className="font-extrabold text-blue-900">{c.courseTitle}</h3>
+                          <p className="text-xs text-gray-500">ইন্সট্রাক্টর: {c.instructorName}</p>
+                        </div>
+                        <button onClick={() => router.push(`/course/${c.courseId}`)} className="bg-blue-600 text-white text-xs font-bold px-4 py-2.5 rounded-lg hover:bg-blue-700 shrink-0">
+                          ক্লাস শুরু করুন →
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* MODAL 3: COURSE PURCHASE HISTORY */}
+            {activeModal === "history" && (
+              <div>
+                <h2 className="text-xl font-extrabold text-gray-900 mb-6 pr-10">কোর্স পারচেজ হিস্ট্রি</h2>
+                {enrolledCourses.length === 0 ? (
+                  <div className="bg-gray-50 p-8 rounded-xl border border-gray-100 text-center">
+                    <p className="text-gray-600 font-medium">আপনার কোনো পেমেন্ট হিস্ট্রি পাওয়া যায়নি।</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse text-sm">
+                      <thead>
+                        <tr className="bg-slate-50 text-slate-500 border-y border-slate-200">
+                          <th className="p-3 font-bold">কোর্স</th>
+                          <th className="p-3 font-bold">মেথড ও TrxID</th>
+                          <th className="p-3 font-bold">পরিমাণ</th>
+                          <th className="p-3 font-bold">স্ট্যাটাস</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {enrolledCourses.map((c) => (
+                          <tr key={c.enrollmentId} className="border-b border-slate-100">
+                            <td className="p-3 font-bold text-slate-800">{c.courseTitle}</td>
+                            <td className="p-3 text-slate-600">
+                              <span className="uppercase font-semibold">{c.paymentMethod || "Manual"}</span>
+                              {c.trxId && <span className="block text-xs text-slate-400">TrxID: {c.trxId}</span>}
+                            </td>
+                            <td className="p-3 font-bold text-slate-800">৳ {c.amountPaid || 0}</td>
+                            <td className="p-3"><span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded-full">PAID</span></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Footer Section */}
       <footer id="contact" className="bg-slate-900 text-white pt-16 pb-8 border-t border-slate-800 scroll-mt-10 mt-auto">
