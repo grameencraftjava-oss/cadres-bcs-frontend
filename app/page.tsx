@@ -170,7 +170,7 @@ export default function Home() {
                   <img src="/logo.png" alt="CBC Logo" className="w-full h-full object-contain" />
                 </div>
                 <h2 className="text-xl md:text-2xl font-extrabold tracking-tight text-white">
-                  Cadre&apos;s BCS Compass-
+                  Cadre&apos;s BCS <span className="text-blue-500">Compass</span>
                 </h2>
               </div>
               <p className="text-slate-400 text-sm leading-relaxed max-w-xs">
