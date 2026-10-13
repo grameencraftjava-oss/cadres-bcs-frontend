@@ -43,6 +43,7 @@ interface UserProfile {
   university: string;
   studentStatus: string;
   statusYear: string;
+  photoUrl?: string; // Photo URL যুক্ত করা হলো
 }
 
 export default function DashboardPage() {
@@ -55,7 +56,6 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
-  // প্রোফাইল ফর্মের জন্য Controlled State (যাতে সেভ করা ডেটা সবসময় বক্সে ঠিকমতো থাকে)
   const [profileForm, setProfileForm] = useState({
     name: "",
     phone: "",
@@ -64,11 +64,9 @@ export default function DashboardPage() {
     statusYear: ""
   });
 
-  // Main Portal Section: "all-courses" | "suggestions" | "youtube"
   const [portalTab, setPortalTab] = useState<"all-courses" | "suggestions" | "youtube">("all-courses");
   const [selectedCourse, setSelectedCourse] = useState<CourseItem | null>(null);
 
-  // Profile Dropdown Modal: null | "profile" | "enrolled" | "history"
   const [activeModal, setActiveModal] = useState<null | "profile" | "enrolled" | "history">(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -116,13 +114,11 @@ export default function DashboardPage() {
         if (profileData.name) localStorage.setItem("userName", profileData.name);
         localStorage.setItem("savedUserProfile_" + email, JSON.stringify(profileData));
 
-        // যদি প্রোফাইল কখনোই সেভ করা না হয়ে থাকে (অসম্পূর্ণ থাকে), তবেই শুধু প্রথমবার বক্স ওপেন হবে
         if (!profileData.phone || !profileData.university || !profileData.studentStatus || !profileData.statusYear) {
           setActiveModal("profile");
           setIsEditingProfile(true);
         }
       } else {
-        // ব্যাকএন্ড কানেকশন স্লো থাকলে লোকাল ব্যাকআপ থেকে লোড করবে
         const cached = localStorage.getItem("savedUserProfile_" + email);
         if (cached) {
           const parsed = JSON.parse(cached);
@@ -225,12 +221,13 @@ export default function DashboardPage() {
   if (!mounted) return null;
 
   const userInitial = (profile?.name || localStorage.getItem("userName") || "S").charAt(0).toUpperCase();
+  // Firebase থেকে গুগল লগইনের ছবি থাকলে তা নিবে, না হলে প্রথম অক্ষর দেখাবে
+  const userPhoto = profile?.photoUrl || null;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
-      {/* Top Navbar */}
       <header className="bg-white/95 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 h-16 sm:h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 h-16 sm:h-20 flex items-center justify-between gap-2">
           <Link href="/" className="flex items-center gap-2 sm:gap-3 min-w-0">
             <img src="/logo.png" alt="CBC Logo" className="w-8 h-8 sm:w-10 sm:h-10 object-contain shrink-0" />
             <span className="text-[13px] sm:text-lg md:text-xl font-extrabold text-gray-900 tracking-tight whitespace-nowrap">
@@ -238,12 +235,7 @@ export default function DashboardPage() {
             </span>
           </Link>
 
-          
-
-          {/* Right Side: Notification Icon (Left) + Profile Icon (Right) */}
           <div className="flex items-center gap-3 sm:gap-4 shrink-0">
-            
-            {/* Notification Bell */}
             <div className="relative" ref={notifMenuRef}>
               <button
                 onClick={() => {
@@ -251,7 +243,6 @@ export default function DashboardPage() {
                   setShowProfileMenu(false);
                 }}
                 className="relative p-2.5 rounded-full bg-gray-50 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition border border-gray-200/80 focus:outline-none"
-                aria-label="Notifications"
               >
                 <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -272,7 +263,6 @@ export default function DashboardPage() {
               )}
             </div>
 
-            {/* Profile Dropdown */}
             <div className="relative" ref={profileMenuRef}>
               <button
                 onClick={() => {
@@ -280,11 +270,15 @@ export default function DashboardPage() {
                   setShowNotifMenu(false);
                 }}
                 className="flex items-center gap-2 p-1 pr-2.5 rounded-full bg-blue-50/70 hover:bg-blue-100/80 border border-blue-200 transition focus:outline-none"
-                aria-label="Profile Menu"
               >
-                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-blue-600 text-white font-extrabold flex items-center justify-center text-sm shadow-sm">
-                  {userInitial}
-                </div>
+                {/* User Photo or Initial */}
+                {userPhoto ? (
+                  <img src={userPhoto} alt="Profile" className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover border border-white shadow-sm" />
+                ) : (
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-blue-600 text-white font-extrabold flex items-center justify-center text-sm shadow-sm">
+                    {userInitial}
+                  </div>
+                )}
                 <svg className={`w-4 h-4 text-gray-600 transition-transform duration-200 ${showProfileMenu ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                 </svg>
@@ -292,12 +286,20 @@ export default function DashboardPage() {
 
               {showProfileMenu && (
                 <div className="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 overflow-hidden">
-                  <div className="px-4 py-3 bg-slate-50 border-b border-gray-100">
-                    <p className="font-extrabold text-gray-900 text-sm truncate">{profile?.name || "শিক্ষার্থী"}</p>
-                    <p className="text-xs text-gray-500 truncate mb-2">{profile?.email || localStorage.getItem("userEmail")}</p>
-                    <div className="inline-flex items-center gap-1.5 bg-blue-100/80 text-blue-800 px-2.5 py-1 rounded-md text-xs font-black tracking-wider">
-                      <span>Student ID:</span>
-                      <span>{profile?.studentId || "Generating..."}</span>
+                  <div className="px-4 py-3 bg-slate-50 border-b border-gray-100 flex items-center gap-3">
+                    {userPhoto ? (
+                      <img src={userPhoto} alt="Profile" className="w-10 h-10 rounded-full object-cover shadow-sm shrink-0" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-blue-600 text-white font-extrabold flex items-center justify-center text-lg shadow-sm shrink-0">
+                        {userInitial}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="font-extrabold text-gray-900 text-sm truncate">{profile?.name || "শিক্ষার্থী"}</p>
+                      <p className="text-[11px] text-gray-500 truncate mb-1">{profile?.email || localStorage.getItem("userEmail")}</p>
+                      <span className="inline-block bg-blue-100/80 text-blue-800 px-2 py-0.5 rounded text-[10px] font-black tracking-wider">
+                        ID: {profile?.studentId || "..."}
+                      </span>
                     </div>
                   </div>
 
@@ -363,23 +365,19 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* Main Student Portal Body */}
       <div className="flex-grow p-4 md:p-8">
         <div className="max-w-6xl mx-auto space-y-6">
-          
-          {/* ১. উপরের স্বাগতম ও ফিক্সড স্টুডেন্ট আইডি কার্ড */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100 gap-4">
             <div>
               <h1 className="text-xl sm:text-2xl font-extrabold text-blue-900">স্বাগতম, {profile?.name || "শিক্ষার্থী"}! 👋</h1>
               <p className="text-xs sm:text-sm text-gray-500 font-medium mt-1">আপনার বিসিএস প্রস্তুতির সকল কোর্স, ফ্রি সাজেশন এবং ক্লাস নিচে সাজানো রয়েছে।</p>
             </div>
             <div className="bg-blue-50 px-4 py-2.5 rounded-xl border border-blue-100 text-left sm:text-center shrink-0">
-              <p className="text-[10px] text-blue-500 font-bold uppercase">Student ID (Fixed)</p>
+              <p className="text-[10px] text-blue-500 font-bold uppercase">Student ID</p>
               <p className="text-base sm:text-lg font-black text-blue-800 tracking-wider">{profile?.studentId || "Generating..."}</p>
             </div>
           </div>
 
-          {/* ২. মেইন পোর্টাল মেনু: আমাদের কোর্সসমূহ | Free Suggestions | Our YouTube Class */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <button
               onClick={() => { setPortalTab("all-courses"); setSelectedCourse(null); }}
@@ -415,7 +413,6 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          {/* SECTION 1: আমাদের কোর্সসমূহ */}
           {portalTab === "all-courses" && (
             <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-100">
               <h2 className="text-xl sm:text-2xl font-extrabold text-blue-900 mb-6">আমাদের কোর্সসমূহ</h2>
@@ -522,7 +519,6 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* SECTION 2: Free Suggestions */}
           {portalTab === "suggestions" && (
             <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-100">
               <h2 className="text-xl sm:text-2xl font-extrabold text-blue-900 mb-6">Free Suggestions</h2>
@@ -583,7 +579,6 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* SECTION 3: Our YouTube Class */}
           {portalTab === "youtube" && (
             <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-100">
               <h2 className="text-xl sm:text-2xl font-extrabold text-blue-900 mb-6">Our YouTube Class</h2>
@@ -645,7 +640,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* MODAL FOR PROFILE / ENROLLED COURSES / PURCHASE HISTORY */}
       {activeModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 max-w-2xl w-full p-6 sm:p-8 relative my-8">
@@ -656,7 +650,6 @@ export default function DashboardPage() {
               ✕
             </button>
 
-            {/* MODAL 1: EDIT / VIEW PROFILE (কোনো placeholder বা suggestion নেই, সেভ করা ডেটা সবসময় স্থায়ীভাবে থাকবে) */}
             {activeModal === "profile" && (
               <div>
                 <div className="flex justify-between items-center mb-6 pr-10">
@@ -752,9 +745,7 @@ export default function DashboardPage() {
                         type="button"
                         onClick={() => {
                           setIsEditingProfile(false);
-                          if (profile?.phone && profile?.university) {
-                            // যদি আগে থেকেই সেভ করা থাকে তবে শুধু ভিউ মোডে ফিরবে
-                          } else {
+                          if (!profile?.phone || !profile?.university) {
                             setActiveModal(null);
                           }
                         }}
@@ -798,7 +789,6 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* MODAL 2: YOUR ENROLLED COURSES */}
             {activeModal === "enrolled" && (
               <div>
                 <h2 className="text-xl font-extrabold text-gray-900 mb-6 pr-10">আমার এনরোল করা কোর্সসমূহ</h2>
@@ -824,7 +814,6 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* MODAL 3: COURSE PURCHASE HISTORY */}
             {activeModal === "history" && (
               <div>
                 <h2 className="text-xl font-extrabold text-gray-900 mb-6 pr-10">কোর্স পারচেজ হিস্ট্রি</h2>
